@@ -1,3 +1,5 @@
+import logging
+
 from dokidokimd import PROJECT_NAME
 
 import os
@@ -6,12 +8,13 @@ from os.path import isfile, join
 from fpdf import FPDF
 from PIL import Image
 
+module_logger = logging.getLogger("ddmd.pdf")
+
 
 class PDF:
     def __init__(self, name):
         self.name = name
         self.num_pages = 0
-        self.images = None
         self.pages = list()
         self.builder = None
 
@@ -22,21 +25,20 @@ class PDF:
             self.pages.insert(index, image_path)
 
         self.num_pages += 1
-        #self.builder.add_page(image, orientation)
 
     def remove_page(self, index=None):
         if index is None:
-            self.pages.pop(self.num_pages-1)
-            self.pages_orientation.pop(self.num_pages-1)
+            self.pages.pop(self.num_pages - 1)
         elif index is not None:
             self.pages.pop(index)
-            self.pages_orientation.pop(index)
 
         self.num_pages -= 1
 
     def make_pdf(self):
+        module_logger.debug("Started make_pdf #if orientation=L x and y are swapped.")
         cover = Image.open(self.pages[0])
         width, height = cover.size
+        module_logger.debug("Cover size %sx%s." % (width, height))
         self.builder = FPDF(unit="pt", format=[width, height])
 
         self.builder.set_title(self.name)
@@ -56,11 +58,11 @@ class PDF:
                 h = height2 / height
                 if w < h:
                     height2 = height
-                    x = (width - width2/h)/2
+                    x = (width - width2 / h) / 2
                     width2 = 0
                 else:
                     width2 = width
-                    y = (height - height2/w)/2
+                    y = (height - height2 / w) / 2
                     height2 = 0
 
             if orientation is "L":
@@ -68,19 +70,26 @@ class PDF:
             else:
                 self.builder.image(self.pages[i], x, y, width2, height2)
 
+            module_logger.debug(
+                "Page no. %s oriented %s, added to pdf, width=%s, height=%s, x=%s, y=%s " % (
+                    i, orientation, width2, height2, x, y))
+
     def add_dir(self, dir_path, extension_filter=None):
+        module_logger.debug(
+            "Added %s directory in pdf module. With extension filter equal to %s" % (dir_path, extension_filter))
         if extension_filter is None:
             files = [os.path.join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
         else:
-            files = [os.path.join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f) and f.endswith("."+extension_filter))]
+            files = [os.path.join(dir_path, f) for f in listdir(dir_path) if
+                     isfile(join(dir_path, f) and f.endswith("." + extension_filter))]
 
         for f in files:
             self.add_page(f)
 
-        # self.builder.output()
-
     def save_pdf(self, path):
+        module_logger.debug("PDF saved to a %s file." % path)
         self.builder.output(path, "F")
+
 
 if __name__ == "__main__":
     pass
