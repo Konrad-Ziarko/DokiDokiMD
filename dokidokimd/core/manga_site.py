@@ -79,7 +79,7 @@ class MangaSite:
 
         #  python scripts
         self.index_crawler = None
-        self.index_detail_crawler = None
+        self.detail_crawler = None
         self.downloader = None
 
         # if json is passed this means to create instance from json data
