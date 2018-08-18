@@ -1,6 +1,7 @@
 import inspect
 import json
-
+import ast
+import pickle
 
 class ObjectEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -21,42 +22,65 @@ class ObjectEncoder(json.JSONEncoder):
                 and not inspect.isroutine(value)
             )
             return self.default(d)
-        return obj  # instead of return obj in the last line I did this return super(ObjectEncoder, self).default(obj)
+        return obj
+
+
+def json_string_to_dict(json_string):
+    strr = json_string
+    x = json.loads(strr, cls=ObjectEncoder, indent=2)
+    return ast.literal_eval(strr)
 
 
 class Chapter:
-
     def __init__(self, json_object=None):
-        self.title = None
-        self.url = None
-        pass
+        self.title = ""
+        self.url = ""
+        self.pages = None
 
         # if json is passed this means to create instance from json data
         if json_object is not None:
-            pass
+            json_dict = json_string_to_dict(json_object)
+            self.title = json_dict['title']
+            self.url = json_dict['url']
 
     def convert_to_json(self):
-        return json.dumps(self.__dict__, cls=ObjectEncoder, indent=2)
-        pass
+        object_dict = self.__dict__
+        self.__dict__.pop('pages', None)  # remove downloaded pages
+        return json.dumps(object_dict, cls=ObjectEncoder, indent=2)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['pages']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
 
 class Manga:
 
     def __init__(self, json_object=None):
-        self.title = None
-        self.url = None
-        self.author = None
-        self.cover = None  # serialize to B64?
-        self.status = None
-        self.genres = None
-        self.summary = None
-        self.chapters = None
-        pass
+        self.title = ""
+        self.url = ""
+        self.author = ""
+        self.cover = ""  # serialize to B64?
+        self.status = ""
+        self.genres = ""
+        self.summary = ""
+        self.chapters = list()
 
         # if json is passed this means to create instance from json data
         if json_object is not None:
             # load each chapter in for loop
-            pass
+            json_dict = json_string_to_dict(json_object)
+            self.title = json_dict['title']
+            self.url = json_dict['url']
+            self.author = json_dict['author']
+            self.cover = json_dict['cover']
+            self.status = json_dict['status']
+            self.genres = json_dict['genres']
+            self.summary = json_dict['summary']
+            self.chapters = json_dict['chapters']
 
     def add_chapter(self, chapter):
         if self.chapters is None:
@@ -67,14 +91,13 @@ class Manga:
 
     def convert_to_json(self):
         return json.dumps(self.__dict__, cls=ObjectEncoder, indent=2)
-        pass
 
 
 class MangaSite:
 
     def __init__(self, json_object=None):
-        self.site_name = None
-        self.url = None
+        self.site_name = ""
+        self.url = ""
         self.mangas = None
 
         #  python scripts
@@ -88,8 +111,6 @@ class MangaSite:
             # load each manga in for loop
             pass
 
-        pass
-
     def add_manga(self, manga):
         if self.mangas is None:
             self.mangas = list()
@@ -99,23 +120,21 @@ class MangaSite:
 
     def convert_to_json(self):
         return json.dumps(self.__dict__, cls=ObjectEncoder, indent=2)
-        pass
 
 
 if __name__ == "__main__":
-    x = Chapter()
-    x.title = "dupa"
-    x.url = "www.dupa"
+    chapter = Chapter()
+    chapter.title = "example"
+    chapter.url = ""
 
-    z = Chapter()
-    z.title = "dupa2"
-    z.url = "www.dupa2"
+    asd = chapter.convert_to_json()
 
-    y = Manga()
-    y.title = "Naruto"
-    y.url = "www.dupa"
-    y.add_chapter(x)
-    y.add_chapter(z)
+    manga = Manga()
+    manga.title = "Naruto"
+    manga.url = "www.example2.com"
+    manga.add_chapter(chapter)
+
+    dum = pickle.dumps(manga)
 
     x1 = Chapter()
     x1.title = "ass"
@@ -123,17 +142,21 @@ if __name__ == "__main__":
 
     z1 = Chapter()
     z1.title = "ass2"
-    z1.url = "www.ass2"
+    z1.url = "www.ass2.com"
 
     y1 = Manga()
     y1.title = "Bleach"
-    y1.url = "www.ass2"
+    y1.url = "www.ass2.com"
     y1.add_chapter(x1)
     y1.add_chapter(z1)
+    print(y1.convert_to_json())
+
+    manga2 = Manga(y1.convert_to_json())
 
     a = MangaSite()
     a.site_name = "mangapanda"
-    a.add_manga(y)
+    a.add_manga(manga)
     a.add_manga(y1)
     print(a.convert_to_json())
-    pass
+
+    b = MangaSite(a.convert_to_json())
