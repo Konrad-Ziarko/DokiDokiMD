@@ -1,16 +1,18 @@
 from dokidokimd.core.manga_site import MangaSite
 from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
 
+# TODO remove this
+from dokidokimd.net.crawler.mangapanda import MangaPandaCrawler
+
 if __name__ == "__main__":
 
     manga_site = MangaSite()
-    manga_site.site_name = "goodmanga"
-    manga_site.url = "www.goodmanga.net"
-    crawler = GoodMangaCrawler()
+    crawler = MangaPandaCrawler()
     crawler.crawl_index(manga_site)
 
-    manga = manga_site.mangas[0]
+    manga = manga_site.mangas[4]
     crawler.crawl_detail(manga)
 
-    print(manga.title)
+    chapter = manga.chapters[0]
+    pages = crawler.download(chapter)
 
