@@ -6,32 +6,33 @@ import requests
 from lxml import html
 
 
-class MangaPandaCrawler(BaseCrawler):
+class KissMangaCrawler(BaseCrawler):
+    # TODO use selenium to bypass cloudflair
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.base_url = AvailableSites.MangaPanda.value
+        self.base_url = AvailableSites.KissManga.value
 
     def crawl_index(self, manga_site):
-        start_url = urljoin(self.base_url, '/alphabetical')
+        start_url = urljoin(self.base_url, '/MangaList')
 
-        response = requests.get(start_url)
+        with requests.Session() as session:
+            response = session.get(start_url, allow_redirects=True)
+            if response.status_code == 200:
+                manga_site.site_name = AvailableSites.KissManga.name
+                manga_site.url = self.base_url
 
-        if response.status_code == 200:
-            manga_site.site_name = AvailableSites.MangaPanda.name
-            manga_site.url = self.base_url
+                tree = html.fromstring(response.content)
 
-            tree = html.fromstring(response.content)
+                for element in tree.xpath('//*[@id="leftside"]/div/div[2]/div[4]/table/tr/td[1]/a'):
+                    manga = Manga()
+                    manga.title = str(element.xpath('text()')[0])
+                    manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
-            for element in tree.xpath('//*[@id="wrapper_body"]/div/div/div/ul/li/a'):
-                manga = Manga()
-                manga.title = str(element.xpath('text()')[0])
-                manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
-
-                manga_site.add_manga(manga)
-        else:
-            raise ConnectionError(
-                "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
+                    manga_site.add_manga(manga)
+            else:
+                raise ConnectionError(
+                    "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
 
     def crawl_detail(self, manga):
         start_url = manga.url
@@ -79,3 +80,4 @@ class MangaPandaCrawler(BaseCrawler):
             else:
                 raise ConnectionError(
                     "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
+

@@ -1,26 +1,24 @@
-import io
-from PIL import Image
-from dokidokimd.core.manga_site import Manga, Chapter
+from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
 
+from urllib.parse import urljoin
 import requests
 from lxml import html
 
 
 class GoodMangaCrawler(BaseCrawler):
-    name = "GoodManga"
-    allowed_domains = ["www.goodmanga.net"]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.base_url = AvailableSites.GoodManga.value
 
     def crawl_index(self, manga_site):
-        start_url = 'http://www.goodmanga.net/manga-list'
+        start_url = urljoin(self.base_url, '/manga-list')
 
         response = requests.get(start_url)
         if response.status_code == 200:
-            manga_site.site_name = "goodmanga"
-            manga_site.url = "www.goodmanga.net"
+            manga_site.site_name = AvailableSites.GoodManga.name
+            manga_site.url = self.base_url
 
             tree = html.fromstring(response.content)
 
@@ -62,7 +60,7 @@ class GoodMangaCrawler(BaseCrawler):
         # FIXME 1: split single page chapters
         start_url = chapter.url
         url = start_url
-        pages = []
+        chapter.pages = []
         retrieved_all_pages = False
 
         while not retrieved_all_pages:
@@ -71,7 +69,7 @@ class GoodMangaCrawler(BaseCrawler):
                 tree = html.fromstring(response.content)
                 image_src = str(tree.xpath('//*[@id="manga_viewer"]/a/img/@src')[0])
                 image = requests.get(image_src, stream=True).content
-                pages.append(image)
+                chapter.pages.append(image)
 
                 try:
                     nav_next = str(tree.xpath('//*[@id="manga_nav_top"]/span/a[2]/@href')[0])
@@ -86,8 +84,3 @@ class GoodMangaCrawler(BaseCrawler):
             else:
                 raise ConnectionError(
                     "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
-
-        # test show
-        #img = Image.open(io.BytesIO(pages[0]))
-        #img.show()
-        return pages

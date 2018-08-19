@@ -12,8 +12,7 @@ module_logger = logging.getLogger("ddmd.pdf")
 
 
 class PDF:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
         self.num_pages = 0
         self.pages = list()
         self.builder = None
@@ -34,14 +33,14 @@ class PDF:
 
         self.num_pages -= 1
 
-    def make_pdf(self):
+    def make_pdf(self, title):
         module_logger.debug("Started make_pdf #if orientation=L x and y are swapped.")
         cover = Image.open(self.pages[0])
         width, height = cover.size
         module_logger.debug("Cover size %sx%s." % (width, height))
         self.builder = FPDF(unit="pt", format=[width, height])
 
-        self.builder.set_title(self.name)
+        self.builder.set_title(title)
         self.builder.set_author(PROJECT_NAME)
 
         for i in range(self.num_pages):

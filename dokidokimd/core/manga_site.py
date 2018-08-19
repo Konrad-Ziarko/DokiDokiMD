@@ -1,4 +1,11 @@
 import pickle
+from enum import Enum
+
+
+class AvailableSites(Enum):
+    GoodManga = "http://www.goodmanga.net/"
+    MangaPanda = "https://www.mangapanda.com/"
+    KissManga = "http://kissmanga.com/"
 
 
 def load_dumped_object(dump_object):
@@ -60,11 +67,6 @@ class MangaSite:
         self.url = None
         self.mangas = None
 
-        #  python scripts
-        self.index_crawler = None
-        self.detail_crawler = None
-        self.downloader = None
-
     def add_manga(self, manga):
         if self.mangas is None:
             self.mangas = list()
@@ -85,4 +87,37 @@ class MangaSite:
 
 if __name__ == "__main__":
     chap = Chapter()
+    chap.title = "example"
+    chap.url = ""
+    dum = chap.dump()
 
+    chapter2 = load_dumped_object(dum)
+
+    man = Manga()
+    man.title = "Naruto"
+    man.url = "www.example2.com"
+    man.add_chapter(chap)
+
+    dum = pickle.dumps(man)
+
+    x1 = Chapter()
+    x1.title = "ass"
+    x1.url = "www.ass"
+
+    z1 = Chapter()
+    z1.title = "ass2"
+    z1.url = "www.ass2.com"
+
+    y1 = Manga()
+    y1.title = "Bleach"
+    y1.url = "www.ass2.com"
+    y1.add_chapter(x1)
+    y1.add_chapter(z1)
+
+    a = MangaSite()
+    a.site_name = "mangapanda"
+    a.add_manga(man)
+    a.add_manga(y1)
+
+    dum2 = a.dump()
+    b = load_dumped_object(dum2)
