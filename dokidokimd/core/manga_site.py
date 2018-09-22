@@ -1,5 +1,10 @@
+import logging
+import os
 import pickle
 from enum import Enum
+
+
+module_logger = logging.getLogger("ddmd.%s" % os.path.splitext((os.path.basename(__file__)))[0])
 
 
 class AvailableSites(Enum):
@@ -8,7 +13,7 @@ class AvailableSites(Enum):
     KissManga = "http://kissmanga.com/"
 
 
-def load_dumped_object(dump_object):
+def load_dumped_site(dump_object):
     return pickle.loads(dump_object)
 
 
@@ -48,6 +53,7 @@ class Manga:
             self.chapters.append(chapter)
         else:
             self.chapters.append(chapter)
+        module_logger.debug("Added [%d] chapter %s to manga %s." % (len(self.chapters), chapter.title, self.title))
 
     def dump(self):
         return pickle.dumps(self)
@@ -73,8 +79,10 @@ class MangaSite:
             self.mangas.append(manga)
         else:
             self.mangas.append(manga)
+        module_logger.debug("Added [%d] manga %s to site %s." % (len(self.mangas), manga.title, self.site_name))
 
     def dump(self):
+        module_logger.debug("Dumped %s site with %d mangas." % (self.site_name, len(self.mangas)))
         return pickle.dumps(self)
 
     def __getstate__(self):
@@ -91,7 +99,7 @@ if __name__ == "__main__":
     chap.url = ""
     dum = chap.dump()
 
-    chapter2 = load_dumped_object(dum)
+    chapter2 = load_dumped_site(dum)
 
     man = Manga()
     man.title = "Naruto"
@@ -120,4 +128,19 @@ if __name__ == "__main__":
     a.add_manga(y1)
 
     dum2 = a.dump()
-    b = load_dumped_object(dum2)
+    b = load_dumped_site(dum2)
+
+    from dokidokimd.core.controller import DDMDController
+    from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
+
+    #gmcrawler = GoodMangaCrawler()
+    xx = MangaSite()
+    #gmcrawler.crawl_index(xx)
+
+    controller = DDMDController()
+    #controller.manga_sites.append(xx)
+
+    #controller.store_sites()
+    controller.load_sites()
+    site = controller.manga_sites
+    pass

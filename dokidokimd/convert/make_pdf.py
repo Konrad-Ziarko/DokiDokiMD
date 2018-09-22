@@ -8,7 +8,7 @@ from os.path import isfile, join
 from fpdf import FPDF
 from PIL import Image
 
-module_logger = logging.getLogger("ddmd.pdf")
+module_logger = logging.getLogger("ddmd.%s" % os.path.splitext((os.path.basename(__file__)))[0])
 
 
 class PDF:
