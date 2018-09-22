@@ -3,9 +3,10 @@ import os
 
 
 from dokidokimd.convert.make_pdf import PDF
+from dokidokimd.cli import main
 
 
-def main():
+def init():
     logger = logging.getLogger("ddmd")
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler("ddmd.log")
@@ -16,4 +17,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    init()
+    main.start()
