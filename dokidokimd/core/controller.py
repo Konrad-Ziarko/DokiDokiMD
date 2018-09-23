@@ -83,7 +83,7 @@ class DDMDController:
                 if os.path.isfile(os.path.join(SAVE_LOCATION_SITES, file_name)):
                     # try to load state
                     try:
-                        with open(os.path.join(SAVE_LOCATION_SITES,file_name), 'rb') as the_file:
+                        with open(os.path.join(SAVE_LOCATION_SITES, file_name), 'rb') as the_file:
                             data = the_file.read()
                             manga_site = load_dumped_site(data)
                             self.manga_sites.append(manga_site)
