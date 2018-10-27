@@ -1,5 +1,3 @@
-
-
 class FileManager:
 
     def __init__(self):
@@ -7,5 +5,3 @@ class FileManager:
 
     def save_files(self):
         pass
-
-

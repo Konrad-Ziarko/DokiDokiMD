@@ -1,10 +1,10 @@
-import logging
-import os
 import pickle
 from enum import Enum
+from os.path import basename
 
+from dokidokimd.logging.logger import get_logger
 
-module_logger = logging.getLogger('ddmd.{}'.format(os.path.splitext((os.path.basename(__file__)))[0]))
+module_logger = get_logger((basename(__file__))[0])
 
 
 class AvailableSites(Enum):
@@ -132,14 +132,14 @@ if __name__ == '__main__':
 
     from dokidokimd.core.controller import DDMDController
 
-    #gmcrawler = GoodMangaCrawler()
+    # gmcrawler = GoodMangaCrawler()
     xx = MangaSite()
-    #gmcrawler.crawl_index(xx)
+    # gmcrawler.crawl_index(xx)
 
     controller = DDMDController()
-    #controller.manga_sites.append(xx)
+    # controller.manga_sites.append(xx)
 
-    #controller.store_sites()
+    # controller.store_sites()
     controller.load_sites()
     site = controller.manga_sites
     pass

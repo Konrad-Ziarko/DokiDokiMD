@@ -1,11 +1,17 @@
 import base64
-from enum import Enum
 import io
+from enum import Enum
+from os.path import basename
+
+from dokidokimd.logging.logger import get_logger
+
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
 from PIL import Image
+
+module_logger = get_logger((basename(__file__))[0])
 
 
 class ImageFormat(Enum):

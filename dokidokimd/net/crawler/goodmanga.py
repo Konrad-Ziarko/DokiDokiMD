@@ -1,9 +1,14 @@
-from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
-from dokidokimd.net.crawler.base_crawler import BaseCrawler
-
+from os.path import basename
 from urllib.parse import urljoin
+
 import requests
 from lxml import html
+
+from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
+from dokidokimd.logging.logger import get_logger
+from dokidokimd.net.crawler.base_crawler import BaseCrawler
+
+module_logger = get_logger((basename(__file__))[0])
 
 
 class GoodMangaCrawler(BaseCrawler):

@@ -1,13 +1,13 @@
-import logging
-from dokidokimd import PROJECT_NAME
-
-import os
 from os import listdir
-from os.path import isfile, join
-from fpdf import FPDF
-from PIL import Image
+from os.path import isfile, join, basename
 
-module_logger = logging.getLogger('ddmd.{}'.format(os.path.splitext((os.path.basename(__file__)))[0]))
+from PIL import Image
+from fpdf import FPDF
+
+from dokidokimd import PROJECT_NAME
+from dokidokimd.logging.logger import get_logger
+
+module_logger = get_logger((basename(__file__))[0])
 
 
 class PDF:
@@ -75,9 +75,9 @@ class PDF:
         module_logger.debug('Added {} directory in pdf module. With extension filter equal to {}'.
                             format(dir_path, extension_filter))
         if extension_filter is None:
-            files = [os.path.join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
+            files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
         else:
-            files = [os.path.join(dir_path, f) for f in listdir(dir_path) if
+            files = [join(dir_path, f) for f in listdir(dir_path) if
                      isfile(join(dir_path, f) and f.endswith('.{}'.format(extension_filter)))]
 
         for f in files:
