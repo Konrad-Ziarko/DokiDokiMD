@@ -1,11 +1,11 @@
 import tkinter as tk
-from os.path import realpath, dirname, join, basename
+from os.path import realpath, dirname, join
 
 import pygubu
 
 from dokidokimd.logging.logger import get_logger
 
-module_logger = get_logger((basename(__file__))[0])
+module_logger = get_logger('main_window')
 
 
 class Application:

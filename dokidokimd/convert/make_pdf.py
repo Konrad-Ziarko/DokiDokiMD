@@ -1,5 +1,5 @@
 from os import listdir
-from os.path import isfile, join, basename
+from os.path import isfile, join
 
 from PIL import Image
 from fpdf import FPDF
@@ -7,7 +7,7 @@ from fpdf import FPDF
 from dokidokimd import PROJECT_NAME
 from dokidokimd.logging.logger import get_logger
 
-module_logger = get_logger((basename(__file__))[0])
+module_logger = get_logger('make_pdf')
 
 
 class PDF:

@@ -1,16 +1,14 @@
 import pickle
-from enum import Enum
-from os.path import basename
 
 from dokidokimd.logging.logger import get_logger
 
-module_logger = get_logger((basename(__file__))[0])
+module_logger = get_logger('manga_site')
 
-
-class AvailableSites(Enum):
-    GoodManga = 'http://www.goodmanga.net/'
-    MangaPanda = 'https://www.mangapanda.com/'
-    KissManga = 'http://kissmanga.com/'
+AvailableSites = {
+    'GoodManga': 'http://www.goodmanga.net/',
+    'MangaPanda': 'https://www.mangapanda.com/',
+    'KissManga': 'http://kissmanga.com/',
+}
 
 
 def load_dumped_site(dump_object):
@@ -18,8 +16,8 @@ def load_dumped_site(dump_object):
 
 
 class Chapter:
-    def __init__(self):
-        self.title = None
+    def __init__(self, title=None):
+        self.title = title
         self.url = None
         self.pages = None
 
@@ -37,11 +35,11 @@ class Chapter:
 
 class Manga:
 
-    def __init__(self):
-        self.title = None
+    def __init__(self, title=None):
+        self.title = title
         self.url = None
         self.author = None
-        self.cover = None  # serialize to B64?
+        self.cover = None  # serialize to B64
         self.status = None
         self.genres = None
         self.summary = None
@@ -68,8 +66,8 @@ class Manga:
 
 class MangaSite:
 
-    def __init__(self):
-        self.site_name = None
+    def __init__(self, site_name=None):
+        self.site_name = site_name
         self.url = None
         self.mangas = None
 

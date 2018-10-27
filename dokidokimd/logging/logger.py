@@ -1,5 +1,4 @@
 import logging
-from os.path import splitext
 
 
 def init_logging():
@@ -13,4 +12,4 @@ def init_logging():
 
 
 def get_logger(module_name):
-    return logging.getLogger('ddmd.{}'.format(splitext(module_name)))
+    return logging.getLogger('ddmd.{}'.format(module_name))

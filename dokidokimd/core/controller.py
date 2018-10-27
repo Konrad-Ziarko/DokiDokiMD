@@ -1,10 +1,9 @@
-from enum import Enum
 from os import getcwd, mkdir, remove, rename, listdir
-from os.path import basename, join, isdir, isfile
+from os.path import join, isdir, isfile
 from sys import platform
 
 from dokidokimd.convert.make_pdf import PDF
-from dokidokimd.core.manga_site import load_dumped_site
+from dokidokimd.core.manga_site import load_dumped_site, MangaSite
 from dokidokimd.logging.logger import get_logger
 from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
 from dokidokimd.net.crawler.kissmanga import KissMangaCrawler
@@ -17,22 +16,22 @@ elif platform == 'darwin':
 elif platform == 'win32':
     pass
 
-module_logger = get_logger((basename(__file__))[0])
+module_logger = get_logger('controller')
 
 WORKING_DIR = getcwd()
 SAVE_LOCATION_SITES = join(WORKING_DIR, 'sites')
 
-
-class MangaCrawlers(Enum):
-    GoodManga = GoodMangaCrawler
-    MangaPanda = MangaPandaCrawler
-    KissManga = KissMangaCrawler
+MangaCrawlers = {
+    'GoodManga': GoodMangaCrawler,
+    'MangaPanda': MangaPandaCrawler,
+    'KissManga': KissMangaCrawler,
+}
 
 
 def manga_site_2_crawler(site_name):
-    for crawler in MangaCrawlers:
-        if crawler.name in site_name:
-            return crawler.value()
+    for name, crawler in MangaCrawlers.items():
+        if name in site_name:
+            return crawler
 
 
 class DDMDController:
@@ -41,8 +40,62 @@ class DDMDController:
         self.manga_sites = []
         self.pdf_converter = PDF()
 
-        # show ui
+    def add_site(self, site_name):
+        sites = [x.lower() for x in MangaCrawlers.keys()]
+        if site_name.lower() in sites:
+            name = [x for x in MangaCrawlers.keys() if site_name.lower() == x.lower()]
+            self.manga_sites.append(MangaSite(name))
+            return True, name
+        return False, site_name
+
+    def list_sites(self):
+        i = 0
+        print('Current manga sites:')
+        for site in self.manga_sites:
+            print('\t[{}]:{} with {} mangas'.
+                  format(i, site.site_name, len(site.mangas) if site.mangas is not None else 0))
+            i = i + 1
+
+    def list_mangas(self, site_number):
+        i = 0
+        mangas = self.manga_sites[site_number].mangas
+        if mangas is None:
+            mangas = list()
+        print('Site {} contains {} mangas: {}'.
+              format(self.manga_sites[site_number].site_name, len(mangas), mangas))
+
+    def list_chapters(self, site_number, manga_number):
+        i = 0
+        chapters = self.manga_sites[site_number].mangas[manga_number].chapters
+        if chapters is None:
+            chapters = list()
+        print('Site {}, manga {} contains {} chapters: {}'.
+              format(self.manga_sites[site_number].site_name, self.manga_sites[site_number].mangas[manga_number].title,
+                     len(chapters), self.manga_sites[site_number].mangas[manga_number].chapters))
+
+    def list_pages(self, site_number, manga_number, chapter_number):
+        i = 0
+        pass # TODO
+
+    def select_chapter(self, site_number, manga_number, chapter_number):
         pass
+
+    def select_manga(self, site_number, manga_number):
+        pass
+
+    def select_site(self, site_number):
+        pass
+
+    def get_cwd(self, site_number, manga_number, chapter_number):
+        cwd = ''
+        if site_number >= 0:
+            cwd = '{}'.format(self.manga_sites[site_number].site_name)
+            if manga_number >= 0:
+                cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].title)
+                if chapter_number >= 0:
+                    cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].chapters[
+                        chapter_number].title)
+        return cwd
 
     def store_sites(self):
         if not isdir(SAVE_LOCATION_SITES):
@@ -101,4 +154,4 @@ class DDMDController:
 
 
 if __name__ == '__main__':
-    pass
+    manga_site_2_crawler('KissManga')
