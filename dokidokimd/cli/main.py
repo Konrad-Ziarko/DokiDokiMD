@@ -1,8 +1,6 @@
 import argparse
 import os
 
-from dokidokimd.core.file_manager import FileManager
-
 
 class CommandLineInterface:
     def __init__(self):
@@ -43,7 +41,7 @@ class CommandLineInterface:
         else:
             parsed, unknown = parser.parse_known_args(args)
             if parsed.all is not None:
-                print('Avaliable manga sites: ' + str(self.manga_sites))
+                print('Avaliable manga sites: {}'.format(self.manga_sites))
             else:
                 if parsed.site is not None:
                     print(parsed.site)
@@ -63,9 +61,9 @@ class CommandLineInterface:
             if parsed.path is not None:
                 if os.path.isdir(os.path.normpath(parsed.path)):
                     self.STORE_FILES_PATH = os.path.normpath(parsed.path)
-                    print('Path for storage set to: %s\n' % self.STORE_FILES_PATH)
+                    print('Path for storage set to: {}\n'.format(self.STORE_FILES_PATH))
                 else:
-                    print('Cannot set path to this location (%s).\n' % os.path.normpath(parsed.path))
+                    print('Cannot set path to this location ({}).\n'.format(os.path.normpath(parsed.path)))
 
     def get_variable(self, args):
         parser = argparse.ArgumentParser(description='Get variable value.')
@@ -76,7 +74,7 @@ class CommandLineInterface:
         else:
             parsed, unknown = parser.parse_known_args(args)
             if parsed.path is not None:
-                print('Path for storage set to: %s\n' % self.STORE_FILES_PATH)
+                print('Path for storage set to: {}\n'.format(self.STORE_FILES_PATH))
 
     def show_help(self):
         print('※ DokiDokiMangaDownloader©®℠™℗ 2018 † ‡ KZiarko ※')
@@ -88,7 +86,7 @@ class CommandLineInterface:
 
     def main_loop(self):
         running = True
-        print('Current location for storing mangas is: \n\t\t%s\\\n' % self.STORE_FILES_PATH)
+        print('Current location for storing mangas is: \n\t\t{}\\\n'.format(self.STORE_FILES_PATH))
 
         manga_sites = []
 
@@ -122,6 +120,6 @@ def start():
     cli.main_loop()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     start()
 

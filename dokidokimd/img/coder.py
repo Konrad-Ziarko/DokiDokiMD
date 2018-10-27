@@ -27,8 +27,8 @@ def b64_to_image(b64_string):
     return image
 
 
-if __name__ == "__main__":
-    with open("../../tests/functional/test_create_pdf_from_jpegs/images/1.jpg", "rb") as image_file:
+if __name__ == '__main__':
+    with open('../../tests/functional/test_create_pdf_from_jpegs/images/1.jpg', 'rb') as image_file:
         encoded_string = image_to_b64(image_file.read())
         print(encoded_string)
 

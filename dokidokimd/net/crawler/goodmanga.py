@@ -29,8 +29,8 @@ class GoodMangaCrawler(BaseCrawler):
 
                 manga_site.add_manga(manga)
         else:
-            raise ConnectionError(
-                "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
+            raise ConnectionError('Could not connect with {} site, status code: {}'.
+                                  format(start_url, response.status_code))
 
     def crawl_detail(self, manga):
         start_url = manga.url
@@ -53,8 +53,8 @@ class GoodMangaCrawler(BaseCrawler):
             # chapters are in descending order so
             manga.chapters.reverse()
         else:
-            raise ConnectionError(
-                "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
+            raise ConnectionError('Could not connect with {} site, status code: {}'.
+                                  format(start_url, response.status_code))
 
     def download(self, chapter):
         # FIXME 1: split single page chapters
@@ -82,5 +82,5 @@ class GoodMangaCrawler(BaseCrawler):
                     # next button navigates to next chapter
                     retrieved_all_pages = True
             else:
-                raise ConnectionError(
-                    "Could not connect with %s site, status code: %s" % (start_url, str(response.status_code)))
+                raise ConnectionError('Could not connect with {} site, status code: {}'.
+                                      format(start_url, response.status_code))

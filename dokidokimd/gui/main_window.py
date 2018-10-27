@@ -1,6 +1,6 @@
-import ntpath
 import os
 import tkinter as tk
+
 import pygubu
 
 

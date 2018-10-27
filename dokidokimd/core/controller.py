@@ -2,20 +2,20 @@ import logging
 import os
 from enum import Enum
 from dokidokimd.convert.make_pdf import PDF
-from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites, load_dumped_site
+from dokidokimd.core.manga_site import load_dumped_site
 from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
 from dokidokimd.net.crawler.kissmanga import KissMangaCrawler
 from dokidokimd.net.crawler.mangapanda import MangaPandaCrawler
 from sys import platform
 
-if platform == "linux" or platform == "linux2":
+if platform == 'linux' or platform == 'linux2':
     pass
-elif platform == "darwin":
+elif platform == 'darwin':
     pass
-elif platform == "win32":
+elif platform == 'win32':
     pass
 
-module_logger = logging.getLogger("ddmd.%s" % os.path.splitext((os.path.basename(__file__)))[0])
+module_logger = logging.getLogger('ddmd.{}'.format(os.path.splitext((os.path.basename(__file__)))[0]))
 
 WORKING_DIR = os.getcwd()
 SAVE_LOCATION_SITES = os.path.join(WORKING_DIR, 'sites')
@@ -50,7 +50,7 @@ class DDMDController:
             data = manga_site.dump()
 
             path_to_file = os.path.join(SAVE_LOCATION_SITES, manga_site.site_name)
-            path_to_old_file = path_to_file + '.old'
+            path_to_old_file = '{}.old'.format(path_to_file)
 
             if os.path.isfile(path_to_file):
                 # check if old file exists and remove it
@@ -63,8 +63,8 @@ class DDMDController:
                     with open(path_to_file, 'wb') as the_file:
                         the_file.write(data)
                 except Exception as e:
-                    module_logger.critical("Could not save %s site to a file %s\nError message: %s" %
-                                           (manga_site.site_name, path_to_file, str(e)))
+                    module_logger.critical('Could not save {} site to a file{}\nError message: {}'.
+                                           format(manga_site.site_name, path_to_file, e))
                     pass
             else:
                 with open(path_to_file, 'wb') as the_file:
@@ -90,7 +90,7 @@ class DDMDController:
                     except Exception as e1:
                         # could not load last state, trying older one
                         try:
-                            with open(os.path.join(SAVE_LOCATION_SITES, file_name) + '.old', 'rb') as the_file:
+                            with open('{}.old'.format(os.path.join(SAVE_LOCATION_SITES, file_name)), 'rb') as the_file:
                                 data = the_file.read()
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)
@@ -98,5 +98,5 @@ class DDMDController:
                             pass
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     pass

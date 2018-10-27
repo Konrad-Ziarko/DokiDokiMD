@@ -4,13 +4,13 @@ import pickle
 from enum import Enum
 
 
-module_logger = logging.getLogger("ddmd.%s" % os.path.splitext((os.path.basename(__file__)))[0])
+module_logger = logging.getLogger('ddmd.{}'.format(os.path.splitext((os.path.basename(__file__)))[0]))
 
 
 class AvailableSites(Enum):
-    GoodManga = "http://www.goodmanga.net/"
-    MangaPanda = "https://www.mangapanda.com/"
-    KissManga = "http://kissmanga.com/"
+    GoodManga = 'http://www.goodmanga.net/'
+    MangaPanda = 'https://www.mangapanda.com/'
+    KissManga = 'http://kissmanga.com/'
 
 
 def load_dumped_site(dump_object):
@@ -53,7 +53,7 @@ class Manga:
             self.chapters.append(chapter)
         else:
             self.chapters.append(chapter)
-        module_logger.debug("Added [%d] chapter %s to manga %s." % (len(self.chapters), chapter.title, self.title))
+        module_logger.debug('Added [{}] chapter {} to manga {}.'.format(len(self.chapters), chapter.title, self.title))
 
     def dump(self):
         return pickle.dumps(self)
@@ -79,10 +79,10 @@ class MangaSite:
             self.mangas.append(manga)
         else:
             self.mangas.append(manga)
-        module_logger.debug("Added [%d] manga %s to site %s." % (len(self.mangas), manga.title, self.site_name))
+        module_logger.debug('Added [{}] manga {} to site {}.'.format(len(self.mangas), manga.title, self.site_name))
 
     def dump(self):
-        module_logger.debug("Dumped %s site with %d mangas." % (self.site_name, len(self.mangas)))
+        module_logger.debug('Dumped {} site with {} mangas.'.format(self.site_name, len(self.mangas)))
         return pickle.dumps(self)
 
     def __getstate__(self):
@@ -93,37 +93,37 @@ class MangaSite:
         self.__dict__.update(state)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     chap = Chapter()
-    chap.title = "example"
-    chap.url = ""
+    chap.title = 'example'
+    chap.url = ''
     dum = chap.dump()
 
     chapter2 = load_dumped_site(dum)
 
     man = Manga()
-    man.title = "Naruto"
-    man.url = "www.example2.com"
+    man.title = 'Naruto'
+    man.url = 'www.example2.com'
     man.add_chapter(chap)
 
     dum = pickle.dumps(man)
 
     x1 = Chapter()
-    x1.title = "ass"
-    x1.url = "www.ass"
+    x1.title = 'ass'
+    x1.url = 'www.ass'
 
     z1 = Chapter()
-    z1.title = "ass2"
-    z1.url = "www.ass2.com"
+    z1.title = 'ass2'
+    z1.url = 'www.ass2.com'
 
     y1 = Manga()
-    y1.title = "Bleach"
-    y1.url = "www.ass2.com"
+    y1.title = 'Bleach'
+    y1.url = 'www.ass2.com'
     y1.add_chapter(x1)
     y1.add_chapter(z1)
 
     a = MangaSite()
-    a.site_name = "mangapanda"
+    a.site_name = 'mangapanda'
     a.add_manga(man)
     a.add_manga(y1)
 
@@ -131,7 +131,6 @@ if __name__ == "__main__":
     b = load_dumped_site(dum2)
 
     from dokidokimd.core.controller import DDMDController
-    from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
 
     #gmcrawler = GoodMangaCrawler()
     xx = MangaSite()
