@@ -14,14 +14,13 @@ class GoodMangaCrawler(BaseCrawler):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.base_url = AvailableSites.GoodManga.value
+        self.base_url = AvailableSites['GoodManga']
 
     def crawl_index(self, manga_site):
         start_url = urljoin(self.base_url, '/manga-list')
 
         response = requests.get(start_url)
         if response.status_code == 200:
-            manga_site.site_name = AvailableSites.GoodManga.name
             manga_site.url = self.base_url
 
             tree = html.fromstring(response.content)

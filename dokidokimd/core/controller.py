@@ -40,51 +40,86 @@ class DDMDController:
         self.manga_sites = []
         self.pdf_converter = PDF()
 
+    def crawl(self, site_number, manga_number=-1, chapter_number=-1):
+        if manga_number >= 0:
+            if chapter_number >= 0:
+                pass  # TODO get pages
+            else:
+                pass  # TODO crawl manga
+        else:
+            site = self.manga_sites[site_number]
+            crawler = manga_site_2_crawler(site.site_name)()
+            crawler.crawl_index(site)
+            return site
+
     def add_site(self, site_name):
         sites = [x.lower() for x in MangaCrawlers.keys()]
         if site_name.lower() in sites:
-            name = [x for x in MangaCrawlers.keys() if site_name.lower() == x.lower()]
+            name, = [x for x in MangaCrawlers.keys() if site_name.lower() == x.lower()]
             self.manga_sites.append(MangaSite(name))
             return True, name
         return False, site_name
 
-    def list_sites(self):
+    def list_sites(self, delimiter='\t'):
         i = 0
         print('Current manga sites:')
+        output = ''
         for site in self.manga_sites:
-            print('\t[{}]:{} with {} mangas'.
-                  format(i, site.site_name, len(site.mangas) if site.mangas is not None else 0))
+            output += ('{}[{}]:{} with {} mangas'.
+                       format(delimiter, i, site.site_name, len(site.mangas) if site.mangas is not None else 0))
             i = i + 1
+        print(output)
 
-    def list_mangas(self, site_number):
+    def list_mangas(self, site_number, delimiter='\t'):
         i = 0
         mangas = self.manga_sites[site_number].mangas
         if mangas is None:
             mangas = list()
-        print('Site {} contains {} mangas: {}'.
-              format(self.manga_sites[site_number].site_name, len(mangas), mangas))
+        print('Site {} contains {} mangas:'.
+              format(self.manga_sites[site_number].site_name, len(mangas)))
+        output = ''
+        for manga in mangas:
+            output += ('{}[{}]:{} with {} chapters'.format(
+                delimiter, i, manga.title, len(manga.chapters) if manga.chapters is not None else 0))
+            i = i + 1
+        print(output)
 
-    def list_chapters(self, site_number, manga_number):
+    def list_chapters(self, site_number, manga_number, delimiter='\t'):
         i = 0
         chapters = self.manga_sites[site_number].mangas[manga_number].chapters
+        manga_title = self.manga_sites[site_number].mangas[manga_number].title
         if chapters is None:
             chapters = list()
-        print('Site {}, manga {} contains {} chapters: {}'.
-              format(self.manga_sites[site_number].site_name, self.manga_sites[site_number].mangas[manga_number].title,
-                     len(chapters), self.manga_sites[site_number].mangas[manga_number].chapters))
+        print('Manga {} contains {} chapters:'.format(manga_title, len(chapters)))
+        output = ''
+        for chapter in chapters:
+            output += ('{}[{}]:{} contains {} pages'.format(delimiter, i, chapter.title, len(chapter.pages)))
+            if delimiter == '\t' and i!=0 and i%5 == 0:
+                output += '\n'
+            i = i + 1
+        print(output)
 
     def list_pages(self, site_number, manga_number, chapter_number):
         i = 0
         pass # TODO
 
     def select_chapter(self, site_number, manga_number, chapter_number):
-        pass
+        if 0 <= chapter_number <= len(self.manga_sites[site_number].mangas[manga_number].chapters)-1:
+            return True
+        else:
+            return False
 
     def select_manga(self, site_number, manga_number):
-        pass
+        if 0 <= manga_number <= len(self.manga_sites[site_number].mangas)-1:
+            return True
+        else:
+            return False
 
     def select_site(self, site_number):
-        pass
+        if 0 <= site_number <= len(self.manga_sites)-1:
+            return True
+        else:
+            return False
 
     def get_cwd(self, site_number, manga_number, chapter_number):
         cwd = ''

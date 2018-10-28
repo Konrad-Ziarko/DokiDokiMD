@@ -15,7 +15,7 @@ class KissMangaCrawler(BaseCrawler):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.base_url = AvailableSites.KissManga.value
+        self.base_url = AvailableSites['KissManga']
 
     def crawl_index(self, manga_site):
         start_url = urljoin(self.base_url, '/MangaList')
@@ -23,7 +23,6 @@ class KissMangaCrawler(BaseCrawler):
         with requests.Session() as session:
             response = session.get(start_url, allow_redirects=True)
             if response.status_code == 200:
-                manga_site.site_name = AvailableSites.KissManga.name
                 manga_site.url = self.base_url
 
                 tree = html.fromstring(response.content)

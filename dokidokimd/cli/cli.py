@@ -1,4 +1,5 @@
 import argparse
+from enum import Enum
 from os import getcwd
 from os.path import dirname, isdir, normpath
 
@@ -14,34 +15,49 @@ def list_supported_sites():
           format(['{}:{}'.format(name, value) for name, value in AvailableSites.items()]))
 
 
+class Position(Enum):
+    ROOT = 0,
+    SITE = 1,
+    MANGA = 2,
+    CHAPTER = 3,
+
+
 class CommandLineInterface:
     def __init__(self, controller):
         self.no_site = -1
         self.no_manga = -1
         self.no_chapter = -1
         self.cwd = ''
+        self.position = Position.ROOT
 
         self.STORE_FILES_PATH = dirname(getcwd())
         self.EXIT_COMMAND = ['e', 'exit', 'q', 'quit']
         self.HELP_COMMAND = ['h', 'help']
 
-        self.LIST_COMMAND = ['l', 'ls', 'list']
-        self.GET_COMMAND = ['g', 'get']
-        self.SET_COMMAND = ['s', 'set']
-        self.ADD_SITE_COMMEND = ['a', 'add']
-        self.CHANGE_COMMAND = ['cd']
-
         self.COMMANDS = {}
+        self.LIST_COMMAND = ['l', 'ls', 'll', 'list']
         for item in self.LIST_COMMAND:
             self.COMMANDS[item] = self.list_cmd
+
+        self.GET_COMMAND = ['g', 'get']
         for item in self.GET_COMMAND:
             self.COMMANDS[item] = self.get_variable
+
+        self.SET_COMMAND = ['s', 'set']
         for item in self.SET_COMMAND:
             self.COMMANDS[item] = self.set_variable
+
+        self.ADD_SITE_COMMEND = ['a', 'add']
         for item in self.ADD_SITE_COMMEND:
             self.COMMANDS[item] = self.add_empty_site
+
+        self.CHANGE_COMMAND = ['cd']
         for item in self.CHANGE_COMMAND:
             self.COMMANDS[item] = self.change_directory
+
+        self.CRAWL_COMMAND = ['c', 'crawl']
+        for item in self.CRAWL_COMMAND:
+            self.COMMANDS[item] = self.crawl
 
         self.controller = controller
 
@@ -64,6 +80,25 @@ class CommandLineInterface:
                     print('Could not add "{}" to current sites'.format(name))
                     list_supported_sites()
 
+    def crawl(self, args):
+        parser = argparse.ArgumentParser(prog='crawl', description='Crawl index of a object.')
+        # TODO parser.add_argument('name', nargs=1, type=str, help='name of an object.')
+        if '-h' in args or '--help' in args:
+            parser.print_help()
+        else:
+            parsed, unknown = parser.parse_known_args(args)
+
+            if self.position == Position.ROOT:
+                pass  # TODO
+            elif self.position == Position.SITE:
+                site = self.controller.crawl(self.no_site)
+                print('Crawled {} site with {} mangas'.
+                      format(site.site_name, len(site.mangas) if site.mangas is not None else 0))
+            elif self.position == Position.MANGA:
+                self.controller.list_chapters(self.no_site, self.no_manga)
+            elif self.position == Position.CHAPTER:
+                self.controller.list_pages(self.no_site, self.no_manga, self.no_chapter)
+
     def load_cmd(self, args):
         parser = argparse.ArgumentParser(prog='load', description='Lists chosen object.')
         parser.add_argument('all', nargs='?', type=str, help='List all manga sites.')
@@ -77,7 +112,7 @@ class CommandLineInterface:
             parsed, unknown = parser.parse_known_args(args)
 
     def list_cmd(self, args=''):
-        parser = argparse.ArgumentParser(prog='ls', description='Lists chosen object.')
+        parser = argparse.ArgumentParser(prog='list', description='Lists chosen object.')
         parser.add_argument('l', nargs='?', type=str, help='Print output in single column.')
         parser.add_argument('a', nargs='?', type=str, help='Print detailed output.')
 
@@ -92,17 +127,15 @@ class CommandLineInterface:
             if parsed.a is not None:
                 details = True
 
-            if self.no_site >= 0:
-                if self.no_manga >= 0:
-                    if self.no_chapter >= 0:
-                        self.controller.list_pages(self.no_site, self.no_manga, self.no_chapter)
-                    else:
-                        self.controller.list_chapters(self.no_site, self.no_manga)
-                else:
-                    self.controller.list_mangas(self.no_site)
-            else:
+            if self.position == Position.ROOT:
                 list_supported_sites()
-                self.controller.list_sites()
+                self.controller.list_sites(delimiter=delimiter)
+            elif self.position == Position.SITE:
+                self.controller.list_mangas(self.no_site, delimiter=delimiter)
+            elif self.position == Position.MANGA:
+                self.controller.list_chapters(self.no_site, self.no_manga, delimiter=delimiter)
+            elif self.position == Position.CHAPTER:
+                self.controller.list_pages(self.no_site, self.no_manga, self.no_chapter, delimiter=delimiter)
 
     def set_variable(self, args):
         parser = argparse.ArgumentParser(prog='set', description='Set variable value.')
@@ -192,29 +225,33 @@ class CommandLineInterface:
                 if parsed.path == '.':
                     pass
                 elif parsed.path == '..':
-                    if self.cwd == '/':
+                    if self.position == Position.ROOT:
                         pass
-                    else:
-                        if self.no_site >= 0:
-                            if self.no_manga >= 0:
-                                if self.no_chapter >= 0:
-                                    self.no_chapter = -1
-                                else:
-                                    self.no_manga = -1
-                            else:
-                                self.no_site = -1
+                    elif self.position == Position.SITE:
+                        self.no_site = -1
+                    elif self.position == Position.MANGA:
+                        self.no_manga = -1
+                    elif self.position == Position.CHAPTER:
+                        self.no_chapter = -1
                 else:
                     if parsed.path.isdigit():
-                        if self.no_site >= 0:
-                            if self.no_manga >= 0:
-                                if self.no_chapter >= 0:
-                                    pass  # TODO cant change dir, already at bottom
-                                else:
-                                    self.controller.select_chapter(self.no_site, self.no_manga, int(parsed.path))
+                        if self.position == Position.ROOT:
+                            if self.controller.select_site(int(parsed.path)):
+                                self.no_site = int(parsed.path)
+                                print('Selected site')
                             else:
-                                self.controller.select_manga(self.no_site, int(parsed.path))
-                        else:
-                            self.controller.select_site(int(parsed.path))
+                                print('Number out of the range')
+                        elif self.position == Position.SITE:
+                            if self.controller.select_manga(self.no_site, int(parsed.path)):
+                                self.no_manga = int(parsed.path)
+                                print('Selected manga')
+                            else:
+                                print('Number out of the range')
+                        elif self.position == Position.MANGA:
+                            self.controller.select_chapter(self.no_site, self.no_manga, int(parsed.path))
+                        elif self.position == Position.CHAPTER:
+                            pass  # TODO cant change dir, already at bottom
+
                     else:
                         pass  # passed name instead of digit
                 self.set_new_cwd()
@@ -222,6 +259,16 @@ class CommandLineInterface:
                 print(self.cwd)
 
     def set_new_cwd(self):
+        if self.no_site >= 0:
+            if self.no_manga >= 0:
+                if self.no_chapter >= 0:
+                    self.position = Position.CHAPTER
+                else:
+                    self.position = Position.MANGA
+            else:
+                self.position = Position.SITE
+        else:
+            self.position = Position.ROOT
         self.cwd = self.controller.get_cwd(self.no_site, self.no_manga, self.no_chapter)
 
 

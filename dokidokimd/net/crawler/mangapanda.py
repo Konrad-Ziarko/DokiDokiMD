@@ -14,7 +14,7 @@ class MangaPandaCrawler(BaseCrawler):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.base_url = AvailableSites.MangaPanda.value
+        self.base_url = AvailableSites['MangaPanda']
 
     def crawl_index(self, manga_site):
         start_url = urljoin(self.base_url, '/alphabetical')
@@ -22,7 +22,6 @@ class MangaPandaCrawler(BaseCrawler):
         response = requests.get(start_url)
 
         if response.status_code == 200:
-            manga_site.site_name = AvailableSites.MangaPanda.name
             manga_site.url = self.base_url
 
             tree = html.fromstring(response.content)
