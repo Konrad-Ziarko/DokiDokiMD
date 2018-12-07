@@ -8,6 +8,9 @@ from dokidokimd.logging.logger import get_logger
 from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
 from dokidokimd.net.crawler.kissmanga import KissMangaCrawler
 from dokidokimd.net.crawler.mangapanda import MangaPandaCrawler
+from dokidokimd.translation.translator import translate
+
+_ = translate
 
 if platform == 'linux' or platform == 'linux2':
     pass
@@ -30,27 +33,108 @@ MangaCrawlers = {
 
 def manga_site_2_crawler(site_name):
     for name, crawler in MangaCrawlers.items():
-        if name in site_name:
-            return crawler
+        if name.lower() in site_name.lower():
+            return crawler()
+    return False
 
 
 class DDMDController:
 
+    @staticmethod
+    def available_sites():
+        return MangaCrawlers.keys()
+
     def __init__(self):
         self.manga_sites = []
         self.pdf_converter = PDF()
+        self.crawlers = {}
 
-    def crawl(self, site_number, manga_number=-1, chapter_number=-1):
-        if manga_number >= 0:
-            if chapter_number >= 0:
-                pass  # TODO get pages
-            else:
-                pass  # TODO crawl manga
+    def __get_crawler(self, site_name):
+        """
+        This method gets proper crawler for a given site
+        :param site_name: String - name of a site
+        :return: Appropriate crawler or False if oen does not exist
+        """
+        if site_name.lower() in (site.lower() for site in self.crawlers):
+            return self.crawlers[site_name]
         else:
-            site = self.manga_sites[site_number]
-            crawler = manga_site_2_crawler(site.site_name)()
-            crawler.crawl_index(site)
-            return site
+            crawler = manga_site_2_crawler(site_name)
+            if crawler is False:
+                return False
+            else:
+                self.crawlers[site_name] = crawler
+                return crawler
+
+    def get_cwd_string(self, site_number=-1, manga_number=-1, chapter_number=-1):
+        """
+        This method produces string representing path to specified place
+        :param site_number:
+        :param manga_number:
+        :param chapter_number:
+        :return:
+        """
+        cwd = '/'
+        try:
+            if site_number >= 0:
+                cwd = '/{}'.format(self.manga_sites[site_number].site_name)
+                if manga_number >= 0:
+                    cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].title)
+                    if chapter_number >= 0:
+                        cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].chapters[
+                            chapter_number].title)
+        except:
+            module_logger.error(_('Could not build path for site_number={}, manga_number={}, chapter_number={}').format(site_number, manga_number, chapter_number))
+        return cwd
+
+    def is_valid_path(self, site_number=None, manga_number=None, chapter_number=None):
+        if site_number is None:
+            return True
+        elif 0 <= site_number <= len(self.manga_sites) - 1:
+            if manga_number is None:
+                return True
+            elif 0 <= manga_number <= len(self.manga_sites[site_number].mangas) - 1:
+                if chapter_number is None:
+                    return True
+                elif 0 <= chapter_number <= len(self.manga_sites[site_number].mangas[manga_number].chapters) - 1:
+                    return True
+        return False
+
+    def list_sites(self, delimiter='\t'):
+        i = 0
+        output = _('Current manga sites:')
+        for site in self.manga_sites:
+            output += (_('{}[{}]:{} with {} mangas').format(delimiter, i, site.site_name, len(site.mangas) if site.mangas is not None else 0))
+            i = i + 1
+        return output
+
+    def list_mangas(self, site_number, delimiter='\t'):
+        i = 0
+        mangas = self.manga_sites[site_number].mangas
+        if mangas is None:
+            mangas = list()
+        output = (_('Site {} contains {} mangas:').format(self.manga_sites[site_number].site_name, len(mangas)))
+        for manga in mangas:
+            output += (_('{}[{}]:{} with {} chapters').format(delimiter, i, manga.title, len(manga.chapters) if manga.chapters is not None else 0))
+            i = i + 1
+        return output
+
+    def list_chapters(self, site_number, manga_number, delimiter='\t'):
+        i = 0
+        chapters = self.manga_sites[site_number].mangas[manga_number].chapters
+        manga_title = self.manga_sites[site_number].mangas[manga_number].title
+        if chapters is None:
+            chapters = list()
+        output = (_('Manga {} contains {} chapters:').format(manga_title, len(chapters)))
+        for chapter in chapters:
+            output += (_('{}[{}]:{} contains {} pages').format(delimiter, i, chapter.title, len(chapter.pages)))
+            if delimiter == '\t' and i != 0 and i % 5 == 0:
+                output += '\n'
+            i = i + 1
+        return output
+
+    def list_pages(self, site_number, manga_number, chapter_number, delimiter='\t'):
+        i = 0
+        raise NotImplementedError
 
     def add_site(self, site_name):
         sites = [x.lower() for x in MangaCrawlers.keys()]
@@ -60,81 +144,33 @@ class DDMDController:
             return True, name
         return False, site_name
 
-    def list_sites(self, delimiter='\t'):
-        i = 0
-        print('Current manga sites:')
-        output = ''
-        for site in self.manga_sites:
-            output += ('{}[{}]:{} with {} mangas'.
-                       format(delimiter, i, site.site_name, len(site.mangas) if site.mangas is not None else 0))
-            i = i + 1
-        print(output)
+    def crawl_site(self, site_number):
+        site = self.manga_sites[site_number]
+        crawler = self.__get_crawler(site.site_name)
+        crawler.crawl_index(site)
+        return site
 
-    def list_mangas(self, site_number, delimiter='\t'):
-        i = 0
-        mangas = self.manga_sites[site_number].mangas
-        if mangas is None:
-            mangas = list()
-        print('Site {} contains {} mangas:'.
-              format(self.manga_sites[site_number].site_name, len(mangas)))
-        output = ''
-        for manga in mangas:
-            output += ('{}[{}]:{} with {} chapters'.format(
-                delimiter, i, manga.title, len(manga.chapters) if manga.chapters is not None else 0))
-            i = i + 1
-        print(output)
+    def crawl_manga(self, site_number, manga_number):
+        site = self.manga_sites[site_number]
+        manga = self.manga_sites[site_number].mangas[manga_number]
+        crawler = self.__get_crawler(site.site_name)
+        crawler.crawl_detail(manga)
+        return manga
 
-    def list_chapters(self, site_number, manga_number, delimiter='\t'):
-        i = 0
-        chapters = self.manga_sites[site_number].mangas[manga_number].chapters
-        manga_title = self.manga_sites[site_number].mangas[manga_number].title
-        if chapters is None:
-            chapters = list()
-        print('Manga {} contains {} chapters:'.format(manga_title, len(chapters)))
-        output = ''
-        for chapter in chapters:
-            output += ('{}[{}]:{} contains {} pages'.format(delimiter, i, chapter.title, len(chapter.pages)))
-            if delimiter == '\t' and i!=0 and i%5 == 0:
-                output += '\n'
-            i = i + 1
-        print(output)
-
-    def list_pages(self, site_number, manga_number, chapter_number):
-        i = 0
-        pass # TODO
-
-    def select_chapter(self, site_number, manga_number, chapter_number):
-        if 0 <= chapter_number <= len(self.manga_sites[site_number].mangas[manga_number].chapters)-1:
-            return True
-        else:
-            return False
-
-    def select_manga(self, site_number, manga_number):
-        if 0 <= manga_number <= len(self.manga_sites[site_number].mangas)-1:
-            return True
-        else:
-            return False
-
-    def select_site(self, site_number):
-        if 0 <= site_number <= len(self.manga_sites)-1:
-            return True
-        else:
-            return False
-
-    def get_cwd(self, site_number, manga_number, chapter_number):
-        cwd = ''
-        if site_number >= 0:
-            cwd = '{}'.format(self.manga_sites[site_number].site_name)
-            if manga_number >= 0:
-                cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].title)
-                if chapter_number >= 0:
-                    cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].chapters[
-                        chapter_number].title)
-        return cwd
+    def crawl_chapter(self, site_number, manga_number, chapter_number):
+        site = self.manga_sites[site_number]
+        chapter = self.manga_sites[site_number].mangas[manga_number].chapters[chapter_number]
+        crawler = self.__get_crawler(site.site_name)
+        crawler.download(chapter)
+        return chapter
 
     def store_sites(self):
-        if not isdir(SAVE_LOCATION_SITES):
-            mkdir(SAVE_LOCATION_SITES)
+        try:
+            if not isdir(SAVE_LOCATION_SITES):
+                mkdir(SAVE_LOCATION_SITES)
+        except Exception as e:
+            module_logger.critical(_('Could not make or access directory {}\nError message: {}').format(SAVE_LOCATION_SITES, e))
+            return False
 
         for manga_site in self.manga_sites:
             data = manga_site.dump()
@@ -153,8 +189,7 @@ class DDMDController:
                     with open(path_to_file, 'wb') as the_file:
                         the_file.write(data)
                 except Exception as e:
-                    module_logger.critical('Could not save {} site to a file{}\nError message: {}'.
-                                           format(manga_site.site_name, path_to_file, e))
+                    module_logger.critical(_('Could not save {} site to a file{}\nError message: {}').format(manga_site.site_name, path_to_file, e))
                     pass
             else:
                 with open(path_to_file, 'wb') as the_file:

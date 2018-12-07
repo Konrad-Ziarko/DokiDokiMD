@@ -59,7 +59,8 @@ class CommandLineInterface:
         for item in self.CRAWL_COMMAND:
             self.COMMANDS[item] = self.crawl
 
-        self.controller = controller
+        #self.controller = controller
+        self.controller = DDMDController()
 
     def add_empty_site(self, args):
         parser = argparse.ArgumentParser(prog='add', description='Add new object.')
@@ -91,7 +92,7 @@ class CommandLineInterface:
             if self.position == Position.ROOT:
                 pass  # TODO
             elif self.position == Position.SITE:
-                site = self.controller.crawl(self.no_site)
+                site = self.controller.crawl_site(self.no_site)
                 print('Crawled {} site with {} mangas'.
                       format(site.site_name, len(site.mangas) if site.mangas is not None else 0))
             elif self.position == Position.MANGA:
@@ -160,7 +161,7 @@ class CommandLineInterface:
             parser.print_help()
         else:
             parsed, unknown = parser.parse_known_args(args)
-            if parsed.path is not None: # TODO
+            if parsed.path is not None:  # TODO
                 print('Path for storage set to: {}\n'.format(self.STORE_FILES_PATH))
 
     def show_help(self, command=None):
@@ -236,19 +237,19 @@ class CommandLineInterface:
                 else:
                     if parsed.path.isdigit():
                         if self.position == Position.ROOT:
-                            if self.controller.select_site(int(parsed.path)):
+                            if self.controller.is_valid_path(int(parsed.path)):
                                 self.no_site = int(parsed.path)
                                 print('Selected site')
                             else:
                                 print('Number out of the range')
                         elif self.position == Position.SITE:
-                            if self.controller.select_manga(self.no_site, int(parsed.path)):
+                            if self.controller.is_valid_path(self.no_site, int(parsed.path)):
                                 self.no_manga = int(parsed.path)
                                 print('Selected manga')
                             else:
                                 print('Number out of the range')
                         elif self.position == Position.MANGA:
-                            self.controller.select_chapter(self.no_site, self.no_manga, int(parsed.path))
+                            self.controller.is_valid_path(self.no_site, self.no_manga, int(parsed.path))
                         elif self.position == Position.CHAPTER:
                             pass  # TODO cant change dir, already at bottom
 
@@ -269,7 +270,7 @@ class CommandLineInterface:
                 self.position = Position.SITE
         else:
             self.position = Position.ROOT
-        self.cwd = self.controller.get_cwd(self.no_site, self.no_manga, self.no_chapter)
+        self.cwd = self.controller.get_cwd_string(self.no_site, self.no_manga, self.no_chapter)
 
 
 def start():

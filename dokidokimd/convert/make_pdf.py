@@ -6,6 +6,9 @@ from fpdf import FPDF
 
 from dokidokimd import PROJECT_NAME
 from dokidokimd.logging.logger import get_logger
+from dokidokimd.translation.translator import translate
+
+_ = translate
 
 module_logger = get_logger('make_pdf')
 
@@ -33,10 +36,10 @@ class PDF:
         self.num_pages -= 1
 
     def make_pdf(self, title):
-        module_logger.debug('Started make_pdf #if orientation=L x and y are swapped.')
+        module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
         cover = Image.open(self.pages[0])
         width, height = cover.size
-        module_logger.debug('Cover size {}x{}.'.format(width, height))
+        module_logger.debug(_('Cover size {}x{}.'.format(width, height)))
         self.builder = FPDF(unit='pt', format=[width, height])
 
         self.builder.set_title(title)
@@ -68,12 +71,10 @@ class PDF:
             else:
                 self.builder.image(self.pages[i], x, y, width2, height2)
 
-            module_logger.debug('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} '.
-                                format(i, orientation, width2, height2, x, y))
+            module_logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
 
     def add_dir(self, dir_path, extension_filter=None):
-        module_logger.debug('Added {} directory in pdf module. With extension filter equal to {}'.
-                            format(dir_path, extension_filter))
+        module_logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
         if extension_filter is None:
             files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
         else:
@@ -84,7 +85,7 @@ class PDF:
             self.add_page(f)
 
     def save_pdf(self, path):
-        module_logger.debug('PDF saved to a {} file.'.format(path))
+        module_logger.debug(_('PDF saved to a {} file.').format(path))
         self.builder.output(path, 'F')
 
 

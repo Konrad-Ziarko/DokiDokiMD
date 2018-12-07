@@ -6,6 +6,8 @@ from lxml import html
 from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
 from dokidokimd.logging.logger import get_logger
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
+from dokidokimd.translation.translator import translate
+_ = translate
 
 module_logger = get_logger('crawler.kissmanga')
 
@@ -34,8 +36,7 @@ class KissMangaCrawler(BaseCrawler):
 
                     manga_site.add_manga(manga)
             else:
-                raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                      format(start_url, response.status_code))
+                raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def crawl_detail(self, manga):
         start_url = manga.url
@@ -56,8 +57,7 @@ class KissMangaCrawler(BaseCrawler):
             # https://api.jikan.moe/
 
         else:
-            raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                  format(start_url, response.status_code))
+            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def download(self, chapter):
         start_url = chapter.url
@@ -81,5 +81,4 @@ class KissMangaCrawler(BaseCrawler):
                     # next button navigates to next chapter
                     retrieved_all_pages = True
             else:
-                raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                      format(start_url, response.status_code))
+                raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))

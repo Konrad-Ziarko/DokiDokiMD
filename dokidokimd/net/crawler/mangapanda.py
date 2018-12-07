@@ -6,6 +6,8 @@ from lxml import html
 from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
 from dokidokimd.logging.logger import get_logger
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
+from dokidokimd.translation.translator import translate
+_ = translate
 
 module_logger = get_logger('crawler.mangapanda')
 
@@ -28,13 +30,12 @@ class MangaPandaCrawler(BaseCrawler):
 
             for element in tree.xpath('//*[@id="wrapper_body"]/div/div/div/ul/li/a'):
                 manga = Manga()
-                manga.title = str(element.xpath('text()')[0])
+                manga.title = str(element.xpath('text()')[0]).strip()
                 manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                 manga_site.add_manga(manga)
         else:
-            raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                  format(start_url, response.status_code))
+            raise ConnectionError(_('Could not connect with {} site, status code: {}'). format(start_url, response.status_code))
 
     def crawl_detail(self, manga):
         start_url = manga.url
@@ -46,7 +47,7 @@ class MangaPandaCrawler(BaseCrawler):
             # crawl for manga chapters
             for element in tree.xpath('//*[@id="listing"]/tr/td[1]/a'):
                 chapter = Chapter()
-                chapter.title = str(element.xpath('text()')[0])
+                chapter.title = str(element.xpath('text()')[0]).strip()
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                 manga.add_chapter(chapter)
@@ -55,8 +56,7 @@ class MangaPandaCrawler(BaseCrawler):
             # https://api.jikan.moe/
 
         else:
-            raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                  format(start_url, response.status_code))
+            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def download(self, chapter):
         start_url = chapter.url
@@ -80,5 +80,4 @@ class MangaPandaCrawler(BaseCrawler):
                     # next button navigates to next chapter
                     retrieved_all_pages = True
             else:
-                raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                      format(start_url, response.status_code))
+                raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))

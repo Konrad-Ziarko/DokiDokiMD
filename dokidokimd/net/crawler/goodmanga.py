@@ -6,6 +6,8 @@ from lxml import html
 from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
 from dokidokimd.logging.logger import get_logger
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
+from dokidokimd.translation.translator import translate
+_ = translate
 
 module_logger = get_logger('crawler.goodmanga')
 
@@ -32,8 +34,7 @@ class GoodMangaCrawler(BaseCrawler):
 
                 manga_site.add_manga(manga)
         else:
-            raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                  format(start_url, response.status_code))
+            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def crawl_detail(self, manga):
         start_url = manga.url
@@ -56,8 +57,7 @@ class GoodMangaCrawler(BaseCrawler):
             # chapters are in descending order so
             manga.chapters.reverse()
         else:
-            raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                  format(start_url, response.status_code))
+            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def download(self, chapter):
         # FIXME 1: split single page chapters
@@ -85,5 +85,4 @@ class GoodMangaCrawler(BaseCrawler):
                     # next button navigates to next chapter
                     retrieved_all_pages = True
             else:
-                raise ConnectionError('Could not connect with {} site, status code: {}'.
-                                      format(start_url, response.status_code))
+                raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))

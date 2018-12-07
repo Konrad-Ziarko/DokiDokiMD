@@ -1,2 +1,3 @@
-def _(input_string):
-    pass
+
+def translate(input_string):
+    return input_string
