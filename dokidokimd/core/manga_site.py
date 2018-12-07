@@ -35,6 +35,9 @@ class Chapter:
     def __setstate__(self, state):
         self.__dict__.update(state)
 
+    def flush_pages(self):
+        self.pages = None
+
 
 class Manga:
 

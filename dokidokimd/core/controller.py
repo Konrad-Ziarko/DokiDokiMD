@@ -107,6 +107,9 @@ class DDMDController:
             i = i + 1
         return output
 
+    def get_sites(self):
+        return [(idx, site.site_name) for idx, site in enumerate(self.manga_sites)]
+
     def list_mangas(self, site_number, delimiter='\t'):
         i = 0
         mangas = self.manga_sites[site_number].mangas
@@ -117,6 +120,9 @@ class DDMDController:
             output += (_('{}[{}]:{} with {} chapters').format(delimiter, i, manga.title, len(manga.chapters) if manga.chapters is not None else 0))
             i = i + 1
         return output
+
+    def get_mangas(self, site_number):
+        return [(idx, manga.title) for idx, manga in enumerate(self.manga_sites[site_number].mangas)]
 
     def list_chapters(self, site_number, manga_number, delimiter='\t'):
         i = 0
@@ -131,6 +137,9 @@ class DDMDController:
                 output += '\n'
             i = i + 1
         return output
+
+    def get_chapters(self, site_number, manga_number):
+        return [(idx, chapter.title) for idx, chapter in enumerate(self.manga_sites[site_number].mangas[manga_number])]
 
     def list_pages(self, site_number, manga_number, chapter_number, delimiter='\t'):
         i = 0
