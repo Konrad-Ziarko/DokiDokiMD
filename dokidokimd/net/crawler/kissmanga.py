@@ -31,7 +31,7 @@ class KissMangaCrawler(BaseCrawler):
 
                 for element in tree.xpath('//*[@id="leftside"]/div/div[2]/div[4]/table/tr/td[1]/a'):
                     manga = Manga()
-                    manga.title = str(element.xpath('text()')[0])
+                    manga.title = str(element.xpath('text()')[0]).strip()
                     manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                     manga_site.add_manga(manga)
@@ -48,7 +48,7 @@ class KissMangaCrawler(BaseCrawler):
             # crawl for manga chapters
             for element in tree.xpath('//*[@id="listing"]/tr/td[1]/a'):
                 chapter = Chapter()
-                chapter.title = str(element.xpath('text()')[0])
+                chapter.title = str(element.xpath('text()')[0]).strip()
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                 manga.add_chapter(chapter)

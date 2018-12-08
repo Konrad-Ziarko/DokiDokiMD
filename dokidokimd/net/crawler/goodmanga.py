@@ -46,7 +46,7 @@ class GoodMangaCrawler(BaseCrawler):
             # crawl for manga chapters
             for element in tree.xpath('//*[@id="chapters"]/ul/li/a'):
                 chapter = Chapter()
-                chapter.title = str(element.xpath('text()')[0]).lstrip()  # lstrip() removes leading newline
+                chapter.title = str(element.xpath('text()')[0]).strip()
                 chapter.url = str(element.xpath('@href')[0])
 
                 manga.add_chapter(chapter)
