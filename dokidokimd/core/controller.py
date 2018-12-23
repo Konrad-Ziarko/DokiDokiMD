@@ -48,6 +48,10 @@ class DDMDController:
         self.manga_sites = []
         self.pdf_converter = PDF()
         self.crawlers = {}
+        self.load_sites()
+        if len(self.manga_sites) == 0:
+            for site, crawler in MangaCrawlers.items():
+                self.manga_sites.append(MangaSite(site))
 
     def __get_crawler(self, site_name):
         """
