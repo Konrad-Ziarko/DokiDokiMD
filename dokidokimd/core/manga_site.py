@@ -49,13 +49,13 @@ class Manga:
         self.status = None
         self.genres = None
         self.summary = None
-        self.chapters = None
+        self.chapters = []
 
     def add_chapter(self, chapter):
         if self.chapters is None:
             self.chapters = list()
             self.chapters.append(chapter)
-        else:
+        elif chapter.url not in [x.url for x in self.chapters if x.url == chapter.url]:
             self.chapters.append(chapter)
         module_logger.debug(_('Added [{}] chapter {} to manga {}.').format(len(self.chapters), chapter.title, self.title))
 
@@ -75,13 +75,14 @@ class MangaSite:
     def __init__(self, site_name=None):
         self.site_name = site_name
         self.url = None
-        self.mangas = None
+        self.mangas = []
 
     def add_manga(self, manga):
+        ln = len(manga.title)
         if self.mangas is None:
             self.mangas = list()
             self.mangas.append(manga)
-        else:
+        elif manga.url not in [x.url for x in self.mangas if x.url == manga.url]:
             self.mangas.append(manga)
         module_logger.debug(_('Added [{}] manga {} to site {}.').format(len(self.mangas), manga.title, self.site_name))
 
