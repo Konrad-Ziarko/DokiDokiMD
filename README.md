@@ -16,12 +16,9 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 ## Overview
 
 ## TUI Controls
-- You can use <kbd>←</kbd> and <kbd>→</kbd> to navigate between existing columns.
-<br>
+- Use <kbd>←</kbd> and <kbd>→</kbd> to navigate between existing columns.
 - <kbd>Enter</kbd>, <kbd>Space</kbd> selects highlighted element from current column.
-<br>
-- You can use <kbd>Mouse</kbd> click to select elements from any visible column.
-<br>
+- Use <kbd>Mouse</kbd> click to select elements from any visible column.
 - Use <kbd>Shift</kbd>+<kbd>d</kbd> to download content of highlighted column(not selected row in a column).
 - Use <kbd>Shift</kbd>+<kbd>s</kbd> to save all data (except chapter images) - it will be autoloaded next time.
 - Use <kbd>Home</kbd> to jump to first element in current column.
