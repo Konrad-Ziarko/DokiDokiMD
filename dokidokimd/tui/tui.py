@@ -27,10 +27,11 @@ palette = [
     ('focus options', 'black', 'light gray'),
     ('selected', 'white', 'dark blue')]
 
-divider = urwid.Divider('\N{LOWER ONE QUARTER BLOCK}')
-bullet = '\N{BULLET} '
-normal_brackets = '「{}」'
-empty_brackets = '『{}』'
+divider = urwid.Divider('\N{Lower One Quarter Block}')
+white_bullet = '\N{White Bullet}'
+bullet = '\N{Bullet}'
+normal_brackets = '\N{Left Corner Bracket}{}\N{Right Corner Bracket}'
+empty_brackets = '\N{Left White Corner Bracket}{}\N{Right White Corner Bracket}'
 
 
 class MenuButton(urwid.Button):
@@ -48,19 +49,20 @@ class ColumnChapters(urwid.WidgetWrap):
         self.downloaded = downloaded
         self.converted = converted
         self.length = '「Pages {}」'.format(self.pages) if not self.downloaded else '『Pages {}』'.format(self.pages)
-        self.caption = '{} {}'.format(caption, self.length)
-        super(ColumnChapters, self).__init__(MenuButton(self.caption, self.clicked, bullet))
+        self.caption = caption
+        self.bullet = white_bullet if self.downloaded else bullet
+        super(ColumnChapters, self).__init__(MenuButton(self.caption, self.clicked, self.bullet))
         listbox = urwid.ListBox(
             urwid.SimpleFocusListWalker(
                 [urwid.AttrMap(urwid.Text(['  ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')]))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
-        state = 'Downloaded - {}\nPDF - {}\n'.format(self.downloaded, self.converted)
+        state = '{}\nDownloaded - {}\nPDF - {}\n'.format(self.length, self.downloaded, self.converted)
 
         response = urwid.AttrMap(urwid.Text([state, '\n', self.caption]), 'heading')
-        done_button = MenuButton('Back', self.go_back, bullet)
-        convert_button = MenuButton('Make PDF', self.go_back, bullet)  # TODO make pdf
+        done_button = MenuButton('Back', self.go_back, self.bullet)
+        convert_button = MenuButton('Make PDF', self.go_back, self.bullet)  # TODO make pdf
         response_box = urwid.Filler(urwid.Pile([response, done_button, convert_button]))
         self.root.chapter_number = self.row
         self.root.open_box(response_box)
@@ -81,7 +83,7 @@ class ColumnMangas(urwid.WidgetWrap):
 
         listbox = urwid.ListBox(
             urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text(['\n  ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
+                [urwid.AttrMap(urwid.Text(['\n', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -100,7 +102,7 @@ class ColumnSites(urwid.WidgetWrap):
         super(ColumnSites, self).__init__(MenuButton(self.caption, self.clicked, bullet))
         listbox = urwid.ListBox(
             urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text(['\n  ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
+                [urwid.AttrMap(urwid.Text(['\n', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -116,7 +118,7 @@ class MainWidget(urwid.WidgetWrap):
         self.root = root
         super(MainWidget, self).__init__(MenuButton([caption], self.clicked, bullet))
         listbox = urwid.ListBox(
-            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n  ', caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices + [urwid.Divider()]))
+            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n', caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices + [urwid.Divider()]))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -147,12 +149,13 @@ class Window:
 
     def change_footer(self, text):
         self.frame.footer = urwid.Text(text)
+        self.ml.draw_screen()
 
     def handle_typing(self, keys):
         to_return = []
         for key in keys:
             if key == 'enter':
-                pass ## TODO apply filter
+                pass  # TODO apply filter
             elif len(key) > 1:
                 to_return.append(key)
             elif key == 'backspace':
@@ -197,6 +200,7 @@ class Window:
                         self.change_footer("{}".format(e))
                 elif col == 2:  # Manga
                     self.change_footer("Indexing Manga...")
+                    urwid
                     try:
                         self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
                         manga = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number]
@@ -245,7 +249,8 @@ class Window:
     def __init__(self, controller):
         self.controller = controller
         self.frame = None
-        self.footer = urwid.Text('DokiDokiMD  |  [D]ownload  [S]ave')
+        self.footer = urwid.Text('DokiDokiMD  |  [D]ownload  [S]ave  [Q]uit')
+        self.header = urwid.Text(['WD>', self.controller.save_location_sites])
 
         self.is_typing = False
         self.regex_str = ''
@@ -254,16 +259,17 @@ class Window:
         self.root = RootWidget(self.controller)
 
         self.manga_data = self.sites_to_menu()
+        self.ml = None
 
     def start(self):
-
         self.root.open_box(self.manga_data.menu)
-        self.frame = urwid.Frame(self.root, footer=self.footer)
-        urwid.MainLoop(self.frame, palette, input_filter=self.filter_if_typing, unhandled_input=self.handle_key).run()
+        self.frame = urwid.Frame(self.root, footer=self.footer, header=self.header)
+        self.ml = urwid.MainLoop(self.frame, palette, input_filter=self.filter_if_typing, unhandled_input=self.handle_key)
+        self.ml.run()
 
 
 if __name__ == '__main__':
-    from sys import platform, executable, stdin
+    from sys import platform
 
     cmd = ''
     python = 'python3.7'

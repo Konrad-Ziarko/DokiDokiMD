@@ -21,8 +21,6 @@ elif platform == 'win32':
 
 module_logger = get_logger('controller')
 
-WORKING_DIR = getcwd()
-SAVE_LOCATION_SITES = join(WORKING_DIR, 'sites')
 
 MangaCrawlers = {
     'GoodManga': GoodMangaCrawler,
@@ -45,6 +43,9 @@ class DDMDController:
         return MangaCrawlers.keys()
 
     def __init__(self):
+        self.working_dir = getcwd()
+        self.save_location_sites = join(self.working_dir, 'sites')
+
         self.manga_sites = []
         self.pdf_converter = PDF()
         self.crawlers = {}
@@ -86,7 +87,7 @@ class DDMDController:
                     if chapter_number >= 0:
                         cwd = '{}/{}'.format(cwd, self.manga_sites[site_number].mangas[manga_number].chapters[
                             chapter_number].title)
-        except:
+        except Exception as e:
             module_logger.error(_('Could not build path for site_number={}, manga_number={}, chapter_number={}').format(site_number, manga_number, chapter_number))
         return cwd
 
@@ -181,16 +182,16 @@ class DDMDController:
 
     def store_sites(self):
         try:
-            if not isdir(SAVE_LOCATION_SITES):
-                mkdir(SAVE_LOCATION_SITES)
+            if not isdir(self.save_location_sites):
+                mkdir(self.save_location_sites)
         except Exception as e:
-            module_logger.critical(_('Could not make or access directory {}\nError message: {}').format(SAVE_LOCATION_SITES, e))
+            module_logger.critical(_('Could not make or access directory {}\nError message: {}').format(self.save_location_sites, e))
             return False
 
         for manga_site in self.manga_sites:
             data = manga_site.dump()
 
-            path_to_file = join(SAVE_LOCATION_SITES, manga_site.site_name)
+            path_to_file = join(self.save_location_sites, manga_site.site_name)
             path_to_old_file = '{}.old'.format(path_to_file)
 
             if isfile(path_to_file):
@@ -214,23 +215,23 @@ class DDMDController:
 
     def load_sites(self):
         self.manga_sites = []
-        if not isdir(SAVE_LOCATION_SITES):
-            mkdir(SAVE_LOCATION_SITES)
+        if not isdir(self.save_location_sites):
+            mkdir(self.save_location_sites)
             # fresh run
             return None
-        for file_name in listdir(SAVE_LOCATION_SITES):
+        for file_name in listdir(self.save_location_sites):
             if not file_name.endswith('.old'):
-                if isfile(join(SAVE_LOCATION_SITES, file_name)):
+                if isfile(join(self.save_location_sites, file_name)):
                     # try to load state
                     try:
-                        with open(join(SAVE_LOCATION_SITES, file_name), 'rb') as the_file:
+                        with open(join(self.save_location_sites, file_name), 'rb') as the_file:
                             data = the_file.read()
                             manga_site = load_dumped_site(data)
                             self.manga_sites.append(manga_site)
                     except Exception as e1:
                         # could not load last state, trying older one
                         try:
-                            with open('{}.old'.format(join(SAVE_LOCATION_SITES, file_name)), 'rb') as the_file:
+                            with open('{}.old'.format(join(self.save_location_sites, file_name)), 'rb') as the_file:
                                 data = the_file.read()
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)

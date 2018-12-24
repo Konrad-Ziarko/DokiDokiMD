@@ -33,9 +33,9 @@ class Chapter:
     def __getstate__(self):
         state = self.__dict__.copy()
         try:
-            #del state['pages']
+            # del state['pages']
             state['pages'] = []
-        except:
+        except Exception as e:
             pass
         return state
 
