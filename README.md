@@ -16,9 +16,9 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 ## Overview
 
 ## TUI Controls
-- You can use <kbd>←</knd> and <kbd>→</knd> to navigate between existing columns.
+- You can use <kbd>←</kbd> and <kbd>→</kbd> to navigate between existing columns.
 <br>
-- <kbd>Enter</knd>, <kbd>Space</knd> selects highlighted element from current column.
+- <kbd>Enter</kbd>, <kbd>Space</kbd> selects highlighted element from current column.
 <br>
 - You can use <kbd>Mouse</kbd> click to select elements from any visible column.
 <br>
@@ -30,7 +30,7 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 - Use <kbd>PageDown</kbd> to jump full screen len down.
 
 + Use <kbd>/</kbd> to start typing filter string.
-  - Use <kbd>Enter</knd> to apply filter.
+  - Use <kbd>Enter</kbd> to apply filter.
 
 ### Example
 ```buildoutcfg
