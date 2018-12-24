@@ -22,18 +22,31 @@ class Chapter:
     def __init__(self, title=None):
         self.title = title
         self.url = None
-        self.pages = None
+        self.pages = []
+
+        self.downloaded = False
+        self.converted = False
 
     def dump(self):
         return pickle.dumps(self)
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['pages']
+        try:
+            #del state['pages']
+            state['pages'] = []
+        except:
+            pass
         return state
 
     def __setstate__(self, state):
         self.__dict__.update(state)
+        if not hasattr(self, 'downloaded'):
+            self.downloaded = False
+        if not hasattr(self, 'converted'):
+            self.converted = False
+        if not hasattr(self, 'pages'):
+            self.pages = []
 
     def flush_pages(self):
         self.pages = None
@@ -50,6 +63,8 @@ class Manga:
         self.genres = None
         self.summary = None
         self.chapters = []
+
+        self.downloaded = False
 
     def add_chapter(self, chapter):
         if self.chapters is None:
@@ -68,6 +83,8 @@ class Manga:
 
     def __setstate__(self, state):
         self.__dict__.update(state)
+        if not hasattr(self, 'downloaded'):
+            self.downloaded = False
 
 
 class MangaSite:

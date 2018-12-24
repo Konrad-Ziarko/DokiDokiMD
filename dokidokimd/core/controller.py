@@ -168,6 +168,7 @@ class DDMDController:
         manga = self.manga_sites[site_number].mangas[manga_number]
         crawler = self.__get_crawler(site.site_name)
         crawler.crawl_detail(manga)
+        manga.downloaded = True
         return manga
 
     def crawl_chapter(self, site_number, manga_number, chapter_number):
@@ -175,6 +176,7 @@ class DDMDController:
         chapter = self.manga_sites[site_number].mangas[manga_number].chapters[chapter_number]
         crawler = self.__get_crawler(site.site_name)
         crawler.download(chapter)
+        chapter.downloaded = True
         return chapter
 
     def store_sites(self):

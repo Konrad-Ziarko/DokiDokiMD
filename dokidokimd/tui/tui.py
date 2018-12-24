@@ -27,45 +27,61 @@ palette = [
     ('focus options', 'black', 'light gray'),
     ('selected', 'white', 'dark blue')]
 
-divider = urwid.Divider(u'\N{LOWER ONE QUARTER BLOCK}')
+divider = urwid.Divider('\N{LOWER ONE QUARTER BLOCK}')
+bullet = '\N{BULLET} '
+normal_brackets = '「{}」'
+empty_brackets = '『{}』'
 
 
 class MenuButton(urwid.Button):
-    def __init__(self, caption, callback):
+    def __init__(self, caption, callback, bullet_point):
         super(MenuButton, self).__init__("")
         urwid.connect_signal(self, 'click', callback)
-        self._w = urwid.AttrMap(urwid.SelectableIcon([u'  \N{BULLET} ', caption], 2), None, 'selected')
+        self._w = urwid.AttrMap(urwid.SelectableIcon([bullet_point, caption], 0), None, 'selected')
 
 
 class ColumnChapters(urwid.WidgetWrap):
-    def __init__(self, root, caption, row, choices=None):
+    def __init__(self, root, caption, row, downloaded, converted, pages=0):
+        self.pages = str(pages)
         self.root = root
         self.row = row
-        super(ColumnChapters, self).__init__(MenuButton(['{} ({})'.format(caption, len(choices)), u"\N{HORIZONTAL ELLIPSIS}"], self.clicked))
-        if choices is None:
-            choices = list()
+        self.downloaded = downloaded
+        self.converted = converted
+        self.length = '「Pages {}」'.format(self.pages) if not self.downloaded else '『Pages {}』'.format(self.pages)
+        self.caption = '{} {}'.format(caption, self.length)
+        super(ColumnChapters, self).__init__(MenuButton(self.caption, self.clicked, bullet))
         listbox = urwid.ListBox(
             urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text([u"\n  ", '{} ({})'.format(caption, len(choices))]), 'heading'), urwid.AttrMap(divider, 'line'), urwid.Divider()] + choices + [
-                    urwid.Divider()]))
+                [urwid.AttrMap(urwid.Text(['  ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')]))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
+        state = 'Downloaded - {}\nPDF - {}\n'.format(self.downloaded, self.converted)
+
+        response = urwid.AttrMap(urwid.Text([state, '\n', self.caption]), 'heading')
+        done_button = MenuButton('Back', self.go_back, bullet)
+        convert_button = MenuButton('Make PDF', self.go_back, bullet)  # TODO make pdf
+        response_box = urwid.Filler(urwid.Pile([response, done_button, convert_button]))
         self.root.chapter_number = self.row
-        self.root.open_box(self.menu)
+        self.root.open_box(response_box)
+
+    def go_back(self, button):
+        self.root.set_focus(self.root.focus_position-1)
 
 
 class ColumnMangas(urwid.WidgetWrap):
     def __init__(self, root, caption, row, choices=None):
-        self.root = root
-        self.row = row
-        super(ColumnMangas, self).__init__(MenuButton(['{} ({})'.format(caption, len(choices)), u"\N{HORIZONTAL ELLIPSIS}"], self.clicked))
         if choices is None:
             choices = list()
+        self.choices = choices
+        self.root = root
+        self.row = row
+        self.caption = '{} 「{}」'.format(caption, len(choices))
+        super(ColumnMangas, self).__init__(MenuButton(self.caption, self.clicked, bullet))
+
         listbox = urwid.ListBox(
             urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text([u"\n  ", '{} ({})'.format(caption, len(choices))]), 'heading'), urwid.AttrMap(divider, 'line'), urwid.Divider()] + choices + [
-                    urwid.Divider()]))
+                [urwid.AttrMap(urwid.Text(['\n  ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -75,15 +91,16 @@ class ColumnMangas(urwid.WidgetWrap):
 
 class ColumnSites(urwid.WidgetWrap):
     def __init__(self, root, caption, row, choices=None):
-        self.root = root
-        self.row = row
-        super(ColumnSites, self).__init__(MenuButton(['{} ({})'.format(caption, len(choices)), u"\N{HORIZONTAL ELLIPSIS}"], self.clicked))
         if choices is None:
             choices = list()
+        self.choices = choices
+        self.root = root
+        self.row = row
+        self.caption = '{} 「{}」'.format(caption, len(choices))
+        super(ColumnSites, self).__init__(MenuButton(self.caption, self.clicked, bullet))
         listbox = urwid.ListBox(
             urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text([u"\n  ", '{} ({})'.format(caption, len(choices))]), 'heading'), urwid.AttrMap(divider, 'line'), urwid.Divider()] + choices + [
-                    urwid.Divider()]))
+                [urwid.AttrMap(urwid.Text(['\n  ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -93,12 +110,13 @@ class ColumnSites(urwid.WidgetWrap):
 
 class MainWidget(urwid.WidgetWrap):
     def __init__(self, root, caption, choices=None):
-        self.root = root
-        super(MainWidget, self).__init__(MenuButton([caption, u"\N{HORIZONTAL ELLIPSIS}"], self.clicked))
         if choices is None:
             choices = list()
+        self.choices = choices
+        self.root = root
+        super(MainWidget, self).__init__(MenuButton([caption], self.clicked, bullet))
         listbox = urwid.ListBox(
-            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text([u"\n  ", caption]), 'heading'), urwid.AttrMap(divider, 'line'), urwid.Divider()] + choices + [urwid.Divider()]))
+            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n  ', caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices + [urwid.Divider()]))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -130,41 +148,82 @@ class Window:
     def change_footer(self, text):
         self.frame.footer = urwid.Text(text)
 
-    def handle_key(self, key):
-        if key in ('q', 'Q'):
-            exit_program(key)
-        if key in ('s', 'S'):
-            try:
-                self.controller.store_sites()
-                self.change_footer("Data saved!")
-            except Exception as e:
-                self.change_footer("{}".format(e))
-        if key in ('d', 'D'):
-
-            col = self.root.get_focus_column()
-            if col == 0:
-                self.change_footer("You can't download sites")
-            elif col == 1:  # Site
-                # self.controller.crawl_site(site_number)
-                # self.root.clear_content()
-                try:
-                    self.controller.crawl_site(self.root.site_number)
-                    self.root.fresh_open(self.sites_to_menu().menu)
-                    self.change_footer("Indexed {} mangas".format(len(self.controller.manga_sites[self.root.site_number].mangas)))
-                except Exception as e:
-                    self.change_footer("{}".format(e))
-            elif col == 2:  # Manga
-                try:
-                    self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
-                    name = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].title
-                    self.root.fresh_open(self.sites_to_menu().menu)
-                    self.change_footer("Indexed {} chapters for manga {}".format(len(self.controller.manga_sites[self.root.site_number].mangas), name))
-                except Exception as e:
-                    self.change_footer("{}".format(e))
+    def handle_typing(self, keys):
+        to_return = []
+        for key in keys:
+            if key == 'enter':
+                pass ## TODO apply filter
+            elif len(key) > 1:
+                to_return.append(key)
+            elif key == 'backspace':
+                self.regex_str = self.regex_str[:-1]
+                self.change_footer('Searching for: {}'.format(self.regex_str))
+            elif key.isalnum() or key.isspace():
+                self.regex_str = '{}{}'.format(self.regex_str, key)
+                self.change_footer('Searching for: {}'.format(self.regex_str))
             else:
+                to_return.append(key)
+        return to_return
+
+    def filter_if_typing(self, keys, raw):
+        if self.is_typing:
+            return self.handle_typing(keys)
+        else:
+            return keys
+
+    def handle_key(self, key):
+        if not isinstance(key, tuple):
+            if key in 'Q':
+                exit_program(key)
+            elif key in 'S':  # Save data
+                try:
+                    self.controller.store_sites()
+                    self.change_footer("Data saved!")
+                except Exception as e:
+                    self.change_footer("{}".format(e))
+            elif key in 'D':  # Download current column
+                col = self.root.get_focus_column()
+                if col == 0:
+                    self.change_footer("You can't download sites")
+                elif col == 1:  # Site
+                    self.change_footer("Indexing Site...")
+                    # self.controller.crawl_site(site_number)
+                    # self.root.clear_content()
+                    try:
+                        self.controller.crawl_site(self.root.site_number)
+                        self.root.fresh_open(self.sites_to_menu().menu)
+                        self.change_footer("Indexed {} mangas".format(len(self.controller.manga_sites[self.root.site_number].mangas)))
+                    except Exception as e:
+                        self.change_footer("{}".format(e))
+                elif col == 2:  # Manga
+                    self.change_footer("Indexing Manga...")
+                    try:
+                        self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
+                        manga = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number]
+                        name = manga.title
+                        no_of_chapters = len(manga.chapters)
+                        self.root.fresh_open(self.sites_to_menu().menu)
+                        self.change_footer("Indexed {} chapters for manga {}".format(no_of_chapters, name))
+                    except Exception as e:
+                        self.change_footer("{}".format(e))
+                elif col == 3:  # Chapter
+                    self.change_footer("Downloading images...")
+                    try:
+                        self.controller.crawl_chapter(self.root.site_number, self.root.manga_number, self.root.chapter_number)
+                        chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
+                        name = chapter.title
+                        no_of_pages = len(chapter.pages)
+                        self.root.fresh_open(self.sites_to_menu().menu)
+                        self.change_footer("Downloaded {} images of {}".format(no_of_pages, name))
+                    except Exception as e:
+                        self.change_footer("{}".format(e))
+                    pass
                 pass  # Details?
 
-            pass
+            elif key in '/':  # Start typing filter
+                if not self.is_typing:
+                    self.is_typing = True
+                    self.change_footer('Searching for: {}'.format(self.regex_str))
 
     def sites_to_menu(self):
         sites = []
@@ -173,8 +232,10 @@ class Window:
             for manga in site.mangas:
                 chapters = []
                 for chapter in manga.chapters:
-                    #TODO for each page ?
-                    chapters.append(ColumnChapters(self.root, chapter.title, manga.chapters.index(chapter), []))
+                    pages = 0
+                    if hasattr(chapter, 'pages') and chapter.pages:
+                        pages = len(chapter.pages)
+                    chapters.append(ColumnChapters(self.root, chapter.title, manga.chapters.index(chapter), chapter.downloaded, chapter.converted, pages))
                 mangas.append(ColumnMangas(self.root, manga.title, site.mangas.index(manga), chapters))
             # add to columnsites
             sites.append(ColumnSites(self.root, site.site_name, self.controller.manga_sites.index(site), mangas))
@@ -185,10 +246,11 @@ class Window:
         self.controller = controller
         self.frame = None
         self.footer = urwid.Text('DokiDokiMD  |  [D]ownload  [S]ave')
-        # self.header = urwid.Text('DokiDokiMD  |  [D]ownload  [S]ave')
 
+        self.is_typing = False
+        self.regex_str = ''
         # for site in self.controller.manga_sites:
-        # self.manga_sites.add_choices(MangaSiteWidget(self.controller, u'{}'.format(site.site_name), []))
+        # self.manga_sites.add_choices(MangaSiteWidget(self.controller, '{}'.format(site.site_name), []))
         self.root = RootWidget(self.controller)
 
         self.manga_data = self.sites_to_menu()
@@ -197,7 +259,7 @@ class Window:
 
         self.root.open_box(self.manga_data.menu)
         self.frame = urwid.Frame(self.root, footer=self.footer)
-        urwid.MainLoop(self.frame, palette, unhandled_input=self.handle_key).run()
+        urwid.MainLoop(self.frame, palette, input_filter=self.filter_if_typing, unhandled_input=self.handle_key).run()
 
 
 if __name__ == '__main__':
