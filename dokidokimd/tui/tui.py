@@ -1,3 +1,4 @@
+import re
 import sys
 from os import getcwd
 import os
@@ -68,7 +69,7 @@ class ColumnChapters(urwid.WidgetWrap):
         self.root.open_box(response_box)
 
     def go_back(self, button):
-        self.root.set_focus(self.root.focus_position-1)
+        self.root.set_focus(self.root.focus_position - 1)
 
 
 class ColumnMangas(urwid.WidgetWrap):
@@ -82,8 +83,7 @@ class ColumnMangas(urwid.WidgetWrap):
         super(ColumnMangas, self).__init__(MenuButton(self.caption, self.clicked, bullet))
 
         listbox = urwid.ListBox(
-            urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text(['\n', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
+            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -101,8 +101,7 @@ class ColumnSites(urwid.WidgetWrap):
         self.caption = '{} 「{}」'.format(caption, len(choices))
         super(ColumnSites, self).__init__(MenuButton(self.caption, self.clicked, bullet))
         listbox = urwid.ListBox(
-            urwid.SimpleFocusListWalker(
-                [urwid.AttrMap(urwid.Text(['\n', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
+            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n ', self.caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -118,7 +117,7 @@ class MainWidget(urwid.WidgetWrap):
         self.root = root
         super(MainWidget, self).__init__(MenuButton([caption], self.clicked, bullet))
         listbox = urwid.ListBox(
-            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n', caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices + [urwid.Divider()]))
+            urwid.SimpleFocusListWalker([urwid.AttrMap(urwid.Text(['\n ', caption]), 'heading'), urwid.AttrMap(divider, 'line')] + choices))
         self.menu = urwid.AttrMap(listbox, 'options')
 
     def clicked(self, button):
@@ -151,19 +150,27 @@ class Window:
         self.frame.footer = urwid.Text(text)
         self.ml.draw_screen()
 
+    def change_header(self, text):
+        self.frame.header = urwid.Text(text)
+        self.ml.draw_screen()
+
     def handle_typing(self, keys):
         to_return = []
         for key in keys:
+            self.change_header(key)
             if key == 'enter':
-                pass  # TODO apply filter
-            elif len(key) > 1:
-                to_return.append(key)
+                self.root.fresh_open(self.sites_to_menu(self.regex_str).menu)
+                self.is_typing = False
+                self.change_footer('Applies filter /{}/'.format(self.regex_str))
+                self.regex_str = ''
             elif key == 'backspace':
                 self.regex_str = self.regex_str[:-1]
                 self.change_footer('Searching for: {}'.format(self.regex_str))
-            elif key.isalnum() or key.isspace():
+            elif key.isalnum() or key.isspace() or len(key) == 1:
                 self.regex_str = '{}{}'.format(self.regex_str, key)
                 self.change_footer('Searching for: {}'.format(self.regex_str))
+            elif len(key) > 1:
+                to_return.append(key)
             else:
                 to_return.append(key)
         return to_return
@@ -200,7 +207,6 @@ class Window:
                         self.change_footer("{}".format(e))
                 elif col == 2:  # Manga
                     self.change_footer("Indexing Manga...")
-                    urwid
                     try:
                         self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
                         manga = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number]
@@ -229,18 +235,21 @@ class Window:
                     self.is_typing = True
                     self.change_footer('Searching for: {}'.format(self.regex_str))
 
-    def sites_to_menu(self):
+    def sites_to_menu(self, match_filter=None):
+        if match_filter is not None:
+            pattern = re.compile(match_filter)
         sites = []
         for site in self.controller.manga_sites:
             mangas = []
             for manga in site.mangas:
-                chapters = []
-                for chapter in manga.chapters:
-                    pages = 0
-                    if hasattr(chapter, 'pages') and chapter.pages:
-                        pages = len(chapter.pages)
-                    chapters.append(ColumnChapters(self.root, chapter.title, manga.chapters.index(chapter), chapter.downloaded, chapter.converted, pages))
-                mangas.append(ColumnMangas(self.root, manga.title, site.mangas.index(manga), chapters))
+                if match_filter is None or pattern.match(manga.title.lower()):
+                    chapters = []
+                    for chapter in manga.chapters:
+                        pages = 0
+                        if hasattr(chapter, 'pages') and chapter.pages:
+                            pages = len(chapter.pages)
+                        chapters.append(ColumnChapters(self.root, chapter.title, manga.chapters.index(chapter), chapter.downloaded, chapter.converted, pages))
+                    mangas.append(ColumnMangas(self.root, manga.title, site.mangas.index(manga), chapters))
             # add to columnsites
             sites.append(ColumnSites(self.root, site.site_name, self.controller.manga_sites.index(site), mangas))
         to_return = MainWidget(self.root, "Manga Sites ({})".format(len(self.controller.manga_sites)), sites)

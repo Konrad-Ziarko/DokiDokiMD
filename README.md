@@ -16,6 +16,7 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 ## Overview
 
 ## TUI Controls
+- Use <kbd>Shift</kbd>+<kbd>q</kbd> to quit.
 - Use <kbd>←</kbd> and <kbd>→</kbd> to navigate between existing columns.
 - <kbd>Enter</kbd>, <kbd>Space</kbd> selects highlighted element from current column.
 - Use <kbd>Mouse</kbd> click to select elements from any visible column.
@@ -26,7 +27,7 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 - Use <kbd>PageUp</kbd> to jump full screen len up.
 - Use <kbd>PageDown</kbd> to jump full screen len down.
 
-+ Use <kbd>/</kbd> to start typing filter string.
++ Use <kbd>/</kbd> to start typing filter string (regular expression).
   - Use <kbd>Enter</kbd> to apply filter.
 
 ### Example
