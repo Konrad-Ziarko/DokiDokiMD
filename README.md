@@ -63,4 +63,4 @@ To post any issue use available issue templates:
 - [PyFPDF](https://github.com/reingart/pyfpdf)
 
 ## License
-This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE.md) file for details
+This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE) file for details
