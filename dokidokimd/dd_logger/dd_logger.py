@@ -8,7 +8,7 @@ def init_logging():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
-    logger.info('Program started\n')
+    logger.info('Program started')
 
 
 def get_logger(module_name):

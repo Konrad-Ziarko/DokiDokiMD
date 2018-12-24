@@ -1,6 +1,6 @@
 import pickle
 
-from dokidokimd.logging.logger import get_logger
+from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
 
 _ = translate

@@ -5,7 +5,7 @@ from PIL import Image
 from fpdf import FPDF
 
 from dokidokimd import PROJECT_NAME
-from dokidokimd.logging.logger import get_logger
+from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
 
 _ = translate

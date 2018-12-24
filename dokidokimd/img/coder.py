@@ -2,7 +2,7 @@ import base64
 import io
 from enum import Enum
 
-from dokidokimd.logging.logger import get_logger
+from dokidokimd.dd_logger.dd_logger import get_logger
 
 try:
     from StringIO import StringIO

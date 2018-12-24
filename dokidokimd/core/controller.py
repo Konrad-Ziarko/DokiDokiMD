@@ -4,7 +4,7 @@ from sys import platform
 
 from dokidokimd.convert.make_pdf import PDF
 from dokidokimd.core.manga_site import load_dumped_site, MangaSite
-from dokidokimd.logging.logger import get_logger
+from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.net.crawler.goodmanga import GoodMangaCrawler
 from dokidokimd.net.crawler.kissmanga import KissMangaCrawler
 from dokidokimd.net.crawler.mangapanda import MangaPandaCrawler

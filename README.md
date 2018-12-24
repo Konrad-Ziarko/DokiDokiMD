@@ -29,13 +29,14 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 
 + Use <kbd>/</kbd> to start typing filter string (regular expression).
   - Use <kbd>Enter</kbd> to apply filter.
-
-### Example
-```buildoutcfg
-
-
-```
-
+  - ### Example regex
+    ```
+    kiss.*      this regex will match all mangas starting with "kiss" folowed by any repeadted or none characters.
+    .*kiss      this regex will match all mangas ending with "kiss".
+    kiss.*ass   this regex will match all mangas starting with "kiss", ending with "ass" and with any or none characters between.
+    ```
+  - Refere to [this site](https://regex101.com/) if you want to learn more basics.
+  
 ## Issue
 To post any issue use available issue templates:
 - [BUG](.github/ISSUE_TEMPLATE/bug_report.md)

@@ -4,7 +4,7 @@ import requests
 from lxml import html
 
 from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
-from dokidokimd.logging.logger import get_logger
+from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
 from dokidokimd.translation.translator import translate
 _ = translate

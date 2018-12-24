@@ -157,7 +157,6 @@ class Window:
     def handle_typing(self, keys):
         to_return = []
         for key in keys:
-            self.change_header(key)
             if key == 'enter':
                 self.root.fresh_open(self.sites_to_menu(self.regex_str).menu)
                 self.is_typing = False
@@ -236,8 +235,7 @@ class Window:
                     self.change_footer('Searching for: {}'.format(self.regex_str))
 
     def sites_to_menu(self, match_filter=None):
-        if match_filter is not None:
-            pattern = re.compile(match_filter)
+        pattern = re.compile(match_filter) if match_filter is not None else None
         sites = []
         for site in self.controller.manga_sites:
             mangas = []
@@ -277,7 +275,7 @@ class Window:
         self.ml.run()
 
 
-if __name__ == '__main__':
+def main():
     from sys import platform
 
     cmd = ''
@@ -296,3 +294,7 @@ if __name__ == '__main__':
         # program started without command line interface
         # start itself in appropriate terminal
         os.system(cmd.format(python=python, path=__file__))
+
+
+if __name__ == '__main__':
+    main()
