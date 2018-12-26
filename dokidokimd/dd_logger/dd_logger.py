@@ -3,7 +3,7 @@
 import logging
 
 
-def init_logging():
+def init_logging() -> None:
     logger = logging.getLogger('ddmd')
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler('ddmd.log')
@@ -13,5 +13,5 @@ def init_logging():
     logger.info('Program started')
 
 
-def get_logger(module_name):
+def get_logger(module_name) -> logging.Logger:
     return logging.getLogger('ddmd.{}'.format(module_name))

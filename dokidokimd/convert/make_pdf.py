@@ -1,10 +1,12 @@
 from os import listdir
 from os.path import isfile, join
+from typing import List
 
 from PIL import Image
 from fpdf import FPDF
 
 from dokidokimd import PROJECT_NAME
+from dokidokimd.core.manga_site import Chapter
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
 
@@ -14,22 +16,22 @@ module_logger = get_logger('make_pdf')
 
 
 class PDF:
-    def __init__(self):
-        self.num_pages = 0
-        self.pages = list()
-        self.builder = None
+    def __init__(self) -> None:
+        self.num_pages = 0      # type: int
+        self.pages = list()     # type: List[bytes]
+        self.builder = None     # type: FPDF
 
-    def clear_pages(self):
+    def clear_pages(self) -> None:
         self.pages = list()
 
-    def add_page(self, image: bytes, index=None):
+    def add_page(self, image: bytes, index: int = None) -> None:
         if index is None:
             self.pages.append(image)
         elif index is not None:
             self.pages.insert(index, image)
         self.num_pages += 1
 
-    def add_page_from_file(self, image_path: str, index=None):
+    def add_page_from_file(self, image_path: str, index: int = None) -> None:
         with(open(image_path, 'rb')) as f:
             image = f.read()
             if index is None:
@@ -38,7 +40,7 @@ class PDF:
                 self.pages.insert(index, image)
         self.num_pages += 1
 
-    def remove_page(self, index=None):
+    def remove_page(self, index: int = None) -> None:
         if self.num_pages >= 1:
             if index is None:
                 self.pages.pop(self.num_pages - 1)
@@ -47,10 +49,10 @@ class PDF:
 
             self.num_pages -= 1
 
-    def add_pages_from_chapter(self, chapter):
+    def add_pages_from_chapter(self, chapter: Chapter) -> None:
         self.pages = self.pages + chapter.pages
 
-    def make_pdf(self, title):
+    def make_pdf(self, title: str) -> None:
         module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
         cover = Image.open(self.pages[0])
         width, height = cover.size
@@ -88,7 +90,7 @@ class PDF:
 
             module_logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
 
-    def add_dir(self, dir_path, extension_filter=None):
+    def add_dir(self, dir_path: str, extension_filter: str = None) -> None:
         module_logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
         if extension_filter is None:
             files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
@@ -101,7 +103,7 @@ class PDF:
                 image = f.read()
                 self.add_page(image)
 
-    def save_pdf(self, path):
+    def save_pdf(self, path: str) -> None:
         module_logger.debug(_('PDF saved to a {} file.').format(path))
         self.builder.output(path, 'F')
 

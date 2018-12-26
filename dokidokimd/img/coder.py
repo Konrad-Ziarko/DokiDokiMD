@@ -21,12 +21,12 @@ class ImageFormat(Enum):
     TIFF = 4
 
 
-def image_to_b64(image):
+def image_to_b64(image: bytes) -> str:
     byte_string = base64.b64encode(image)
     return byte_string
 
 
-def b64_to_image(b64_string):
+def b64_to_image(b64_string: str) -> bytes:
     decoded_string = base64.b64decode(b64_string)
     image = Image.open(io.BytesIO(decoded_string))
     return image

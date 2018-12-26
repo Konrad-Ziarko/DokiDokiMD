@@ -58,7 +58,7 @@ class DDMDController:
             for site, crawler in MangaCrawlers.items():
                 self.manga_sites.append(MangaSite(site))
 
-    def __get_crawler(self, site_name) -> Union[BaseCrawler, bool]:
+    def __get_crawler(self, site_name: str) -> Union[BaseCrawler, bool]:
         """
         This method gets proper crawler for a given site
         :param site_name: String - name of a site
@@ -75,7 +75,7 @@ class DDMDController:
                 module_logger.error(_('Could not get {} crawler').format(site_name))
                 return False
 
-    def get_cwd_string(self, site_number=-1, manga_number=-1, chapter_number=-1) -> str:
+    def get_cwd_string(self, site_number: int = -1, manga_number: int = -1, chapter_number: int = -1) -> str:
         """
         This method produces string representing path to specified place
         :param site_number:
@@ -135,7 +135,7 @@ class DDMDController:
     def get_mangas(self, site_number: int) -> List[Tuple[int, str]]:
         return [(idx, manga.title) for idx, manga in enumerate(self.manga_sites[site_number].mangas)]
 
-    def list_chapters(self, site_number: int, manga_number: int, delimiter: str ='\t') -> str:
+    def list_chapters(self, site_number: int, manga_number: int, delimiter: str = '\t') -> str:
         i = 0
         chapters = self.manga_sites[site_number].mangas[manga_number].chapters
         manga_title = self.manga_sites[site_number].mangas[manga_number].title
@@ -152,7 +152,7 @@ class DDMDController:
     def get_chapters(self, site_number: int, manga_number: int) -> List[Tuple[int, str]]:
         return [(idx, chapter.title) for idx, chapter in enumerate(self.manga_sites[site_number].mangas[manga_number].chapters)]
 
-    def list_pages(self, site_number, manga_number, chapter_number, delimiter='\t'):
+    def list_pages(self, site_number: int, manga_number: int, chapter_number: int, delimiter: str = '\t'):
         raise NotImplementedError
 
     def add_site(self, site_name: str) -> (bool, str):

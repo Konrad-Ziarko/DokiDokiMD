@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 import requests
 from lxml import html
 
-from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites
+from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites, MangaSite
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
 from dokidokimd.translation.translator import translate
@@ -14,11 +14,11 @@ module_logger = get_logger('crawler.mangapanda')
 
 class MangaPandaCrawler(BaseCrawler):
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.base_url = AvailableSites['MangaPanda']
+        self.base_url = AvailableSites['MangaPanda']    # type: str
 
-    def crawl_index(self, manga_site):
+    def crawl_index(self, manga_site: MangaSite) -> None:
         start_url = urljoin(self.base_url, '/alphabetical')
 
         response = requests.get(start_url)
@@ -37,7 +37,7 @@ class MangaPandaCrawler(BaseCrawler):
         else:
             raise ConnectionError(_('Could not connect with {} site, status code: {}'). format(start_url, response.status_code))
 
-    def crawl_detail(self, manga):
+    def crawl_detail(self, manga: Manga) -> None:
         start_url = manga.url
 
         response = requests.get(start_url)
@@ -58,7 +58,7 @@ class MangaPandaCrawler(BaseCrawler):
         else:
             raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
-    def download(self, chapter):
+    def download(self, chapter: Chapter) -> None:
         start_url = chapter.url
         url = start_url
         chapter.pages = []
