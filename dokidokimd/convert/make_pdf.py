@@ -19,21 +19,36 @@ class PDF:
         self.pages = list()
         self.builder = None
 
-    def add_page(self, image_path, index=None):
-        if index is None:
-            self.pages.append(image_path)
-        elif index is not None:
-            self.pages.insert(index, image_path)
+    def clear_pages(self):
+        self.pages = list()
 
+    def add_page(self, image: bytes, index=None):
+        if index is None:
+            self.pages.append(image)
+        elif index is not None:
+            self.pages.insert(index, image)
+        self.num_pages += 1
+
+    def add_page_from_file(self, image_path: str, index=None):
+        with(open(image_path, 'rb')) as f:
+            image = f.read()
+            if index is None:
+                self.pages.append(image)
+            elif index is not None:
+                self.pages.insert(index, image)
         self.num_pages += 1
 
     def remove_page(self, index=None):
-        if index is None:
-            self.pages.pop(self.num_pages - 1)
-        elif index is not None:
-            self.pages.pop(index)
+        if self.num_pages >= 1:
+            if index is None:
+                self.pages.pop(self.num_pages - 1)
+            elif index is not None:
+                self.pages.pop(index)
 
-        self.num_pages -= 1
+            self.num_pages -= 1
+
+    def add_pages_from_chapter(self, chapter):
+        self.pages = self.pages + chapter.pages
 
     def make_pdf(self, title):
         module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
@@ -81,8 +96,10 @@ class PDF:
             files = [join(dir_path, f) for f in listdir(dir_path) if
                      isfile(join(dir_path, f) and f.endswith('.{}'.format(extension_filter)))]
 
-        for f in files:
-            self.add_page(f)
+        for file in files:
+            with(open(file, 'rb')) as f:
+                image = f.read()
+                self.add_page(image)
 
     def save_pdf(self, path):
         module_logger.debug(_('PDF saved to a {} file.').format(path))

@@ -1,4 +1,8 @@
 import pickle
+import re
+from typing import List
+
+from PIL import Image
 
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
@@ -6,6 +10,9 @@ from dokidokimd.translation.translator import translate
 _ = translate
 
 module_logger = get_logger('manga_site')
+
+PathSafeRegEx = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
+PathSafeReplaceChar = r'_'
 
 AvailableSites = {
     'GoodManga': 'http://www.goodmanga.net/',
@@ -19,13 +26,18 @@ def load_dumped_site(dump_object):
 
 
 class Chapter:
-    def __init__(self, title=None):
-        self.title = title
-        self.url = None
-        self.pages = []
+    def __init__(self, title: str = None) -> None:
+        self.manga_ref = None       # type: Manga
+        self.title = title          # type: str
+        self.url = None             # type: str
+        self.pages = []             # type: List[Image]
 
-        self.downloaded = False
-        self.converted = False
+        self.downloaded = False     # type: bool
+        self.converted = False      # type: bool
+
+    def get_path_safe_title(self) -> str:
+        pattern = re.compile(PathSafeRegEx, re.UNICODE)
+        return pattern.sub(PathSafeReplaceChar, self.title)
 
     def dump(self):
         return pickle.dumps(self)
@@ -48,25 +60,31 @@ class Chapter:
         if not hasattr(self, 'pages'):
             self.pages = []
 
-    def flush_pages(self):
+    def flush_pages(self) -> None:
         self.pages = None
 
 
 class Manga:
 
-    def __init__(self, title=None):
-        self.title = title
-        self.url = None
-        self.author = None
-        self.cover = None  # serialize to B64
-        self.status = None
-        self.genres = None
-        self.summary = None
-        self.chapters = []
+    def __init__(self, title=None) -> None:
+        self.site_ref = None        # type: MangaSite
+        self.title = title          # type: str
+        self.url = None             # type: str
+        self.author = None          # type: str
+        self.cover = None           # serialized to B64 type: str
+        self.status = None          # type: str
+        self.genres = None          # type: str
+        self.summary = None         # type: str
+        self.chapters = []          # type: List[Chapter]
 
-        self.downloaded = False
+        self.downloaded = False  # type: bool
 
-    def add_chapter(self, chapter):
+    def get_path_safe_title(self) -> str:
+        pattern = re.compile(PathSafeRegEx, re.UNICODE)
+        return pattern.sub(PathSafeReplaceChar, self.title)
+
+    def add_chapter(self, chapter) -> None:
+        chapter.manga_ref = self
         if self.chapters is None:
             self.chapters = list()
             self.chapters.append(chapter)
@@ -89,13 +107,13 @@ class Manga:
 
 class MangaSite:
 
-    def __init__(self, site_name=None):
-        self.site_name = site_name
-        self.url = None
-        self.mangas = []
+    def __init__(self, site_name=None) -> None:
+        self.site_name = site_name      # type: str
+        self.url = None                 # type: str
+        self.mangas = []                # type: List[Manga]
 
-    def add_manga(self, manga):
-        ln = len(manga.title)
+    def add_manga(self, manga) -> None:
+        manga.site_ref = self
         if self.mangas is None:
             self.mangas = list()
             self.mangas.append(manga)

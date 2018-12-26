@@ -29,7 +29,7 @@ class GoodMangaCrawler(BaseCrawler):
 
             for element in tree.xpath('//*[@id="content"]/table/tr/td/a'):
                 manga = Manga()
-                manga.title = str(element.xpath('text()')[0])
+                manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                 manga.url = str(element.xpath('@href')[0])
 
                 manga_site.add_manga(manga)
@@ -46,7 +46,7 @@ class GoodMangaCrawler(BaseCrawler):
             # crawl for manga chapters
             for element in tree.xpath('//*[@id="chapters"]/ul/li/a'):
                 chapter = Chapter()
-                chapter.title = str(element.xpath('text()')[0]).strip()
+                chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                 chapter.url = str(element.xpath('@href')[0])
 
                 manga.add_chapter(chapter)

@@ -1,3 +1,5 @@
+# logger renamed to dd_logger because of conflicts with Pillow (from PIL import Image) logger
+
 import logging
 
 
