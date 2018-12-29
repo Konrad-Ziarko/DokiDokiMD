@@ -25,10 +25,11 @@ Object used by the program are saved and loaded (with [Pickle](https://docs.pyth
 - Use <kbd>←</kbd> and <kbd>→</kbd> to navigate between existing columns.
 - <kbd>Enter</kbd>, <kbd>Space</kbd> selects highlighted element from current column.
 - Use <kbd>Mouse</kbd> click to select elements from any visible column.
-- Use chapter column buttons (Download, Save, Convert) or:
+- Use chapter column buttons (Download, Save, Convert, Remove) or:
     - Use <kbd>Shift</kbd>+<kbd>d</kbd> to download content of highlighted column(not selected row in a column).
     - Use <kbd>Shift</kbd>+<kbd>w</kbd> to save pages from chapter as images.
     - Use <kbd>Shift</kbd>+<kbd>c</kbd> to converted downloaded pages into PDF.
+    - Use <kbd>Shift</kbd>+<kbd>r</kbd> to remove downloaded images.
 - Use <kbd>Home</kbd> to jump to first element in current column.
 - Use <kbd>End</kbd> to jump to last element in current column.
 - Use <kbd>PageUp</kbd> to jump full screen length up.

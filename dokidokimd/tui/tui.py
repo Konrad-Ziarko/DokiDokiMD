@@ -84,7 +84,7 @@ class ColumnChapters(urwid.WidgetWrap):
         self.root.window.convert_chapter_2_pdf()
 
     def remove_images(self, button):
-        pass  # TODO
+        self.root.window.remove_images()
 
 
 class ColumnMangas(urwid.WidgetWrap):
@@ -267,6 +267,26 @@ class Window:
         else:
             self.change_footer(_('You have to be in a specific manga chapter'))
 
+    def remove_images(self):
+        current_column = self.root.get_focus_column()
+        if current_column == 3:
+            chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
+            if not chapter.downloaded:
+                self.change_footer(_('You have to download the chapter first (Shift + D)'))
+            else:
+                self.change_footer(_('Removing images for {}').format(chapter.title))
+                try:
+                    boolean, path = self.controller.remove_images(chapter)
+                    if boolean:
+                        # self.root.fresh_open(self.sites_to_menu().menu)
+                        self.change_footer(_('Removed images for {} from {}').format(chapter.title, path))
+                    else:
+                        self.change_footer(_('Images of {} could not be removed from {}').format(chapter.title, path))
+                except Exception as e:
+                    self.change_footer('{}'.format(e))
+        else:
+            self.change_footer(_('You have to be in a specific manga chapter'))
+
     def handle_key(self, key):
         if not isinstance(key, tuple):
             if key in 'Q':
@@ -285,6 +305,8 @@ class Window:
                 self.save_chapter_images()
             elif key in 'D':  # Download current column
                 self.download_content()
+            elif key in 'R':  # Download current column
+                self.remove_images()
             elif key in '/':  # Start typing filter
                 if not self.is_typing:
                     self.is_typing = True
@@ -310,7 +332,7 @@ class Window:
         return to_return
 
     def __init__(self, controller: DDMDController):
-        self.help_text = _('[S]aveDB  [D]ownload  [W]riteImages  [C]onvert2PDF  [H]elp  [Q]uit')
+        self.help_text = _('[S]aveDB  [D]ownload  [W]riteImages  [C]onvert2PDF  [R]emoveImages  [H]elp  [Q]uit')
         self.controller = controller                                            # type: DDMDController
         self.frame = None                                                       # type: urwid.Frame
         self.footer = urwid.Text(self.help_text)                                # type: urwid.Text

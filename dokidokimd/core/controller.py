@@ -1,6 +1,6 @@
 import imghdr
 from io import BytesIO
-from os import getcwd, remove, rename, listdir, makedirs
+from os import getcwd, remove, rename, listdir, makedirs, unlink, rmdir
 from os.path import join, isdir, isfile
 from sys import platform
 from typing import List, Dict, Tuple, Union
@@ -207,6 +207,25 @@ class DDMDController:
             module_logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
             return False, pdf_dir
         return True, pdf_dir
+
+    def remove_images(self, chapter: Chapter) -> Tuple[bool, str]:
+        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
+        try:
+            if not isdir(images_dir):
+                return False, images_dir
+            for the_file in listdir(images_dir):
+                file_path = join(images_dir, the_file)
+                try:
+                    if isfile(file_path):
+                        unlink(file_path)
+                except Exception as e:
+                    module_logger.error(_('Could not remove image {}\nError message: {}').format(file_path, e))
+            rmdir(images_dir)
+            chapter.pages = list()
+        except Exception as e:
+            module_logger.error(_('Could not remove images from {}\nError message: {}').format(images_dir, e))
+            return False, images_dir
+        return True, images_dir
 
     def save_images_from_chapter(self, chapter: Chapter) -> Tuple[bool, str]:
         images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
