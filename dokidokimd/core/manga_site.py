@@ -71,7 +71,7 @@ class Manga:
         self.title = title          # type: str
         self.url = None             # type: str
         self.author = None          # type: str
-        self.cover = None           # serialized to B64 type: str
+        self.cover = None           # type: str
         self.status = None          # type: str
         self.genres = None          # type: str
         self.summary = None         # type: str

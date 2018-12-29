@@ -25,7 +25,6 @@ elif platform == 'win32':
 
 module_logger = get_logger('controller')
 
-
 MangaCrawlers = {
     'GoodManga': GoodMangaCrawler,
     'MangaPanda': MangaPandaCrawler,
@@ -179,7 +178,7 @@ class DDMDController:
             manga.downloaded = True
             return manga
 
-    def crawl_chapter(self, site_number: int, manga_number: int, chapter_number: int)-> Chapter:
+    def crawl_chapter(self, site_number: int, manga_number: int, chapter_number: int) -> Chapter:
         site = self.manga_sites[site_number]
         chapter = self.manga_sites[site_number].mangas[manga_number].chapters[chapter_number]
         crawler = self.__get_crawler(site.site_name)
@@ -188,8 +187,26 @@ class DDMDController:
             chapter.downloaded = True
             return chapter
 
-    def convert_chapter_2_pdf(self, chapter: Chapter):
-        pass  # TODO
+    def convert_chapter_2_pdf(self, chapter: Chapter) -> Tuple[bool, str]:
+        pdf_dir = join(self.save_location_sites, 'converted', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
+        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
+        if not isdir(images_dir):
+            return False, pdf_dir
+        if not listdir(images_dir):
+            return False, pdf_dir
+        try:
+            if not isdir(pdf_dir):
+                makedirs(pdf_dir, exist_ok=True)
+            self.pdf_converter.clear_pages()
+            self.pdf_converter.add_dir(images_dir)
+            self.pdf_converter.make_pdf(chapter.title)
+            self.pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()))
+            self.pdf_converter.clear_pages()
+            chapter.converted = True
+        except Exception as e:
+            module_logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
+            return False, pdf_dir
+        return True, pdf_dir
 
     def save_images_from_chapter(self, chapter: Chapter) -> Tuple[bool, str]:
         images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
@@ -199,8 +216,9 @@ class DDMDController:
             idx = 1
             for page in chapter.pages:
                 img_type = imghdr.what(BytesIO(page))
-                with open(join(images_dir, '{:0>3d}'.format(idx)+'_'+chapter.get_path_safe_title()+'.'+img_type), 'wb') as f:
+                with open(join(images_dir, '{:0>3d}'.format(idx) + '_' + chapter.get_path_safe_title() + '.' + img_type), 'wb') as f:
                     f.write(page)
+                    idx += 1
         except Exception as e:
             module_logger.error(_('Could not save images to {}\nError message: {}').format(images_dir, e))
             return False, images_dir

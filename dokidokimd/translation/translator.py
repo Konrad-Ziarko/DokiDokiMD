@@ -1,3 +1,5 @@
+import gettext
 
-def translate(input_string: str) -> str:
-    return input_string
+gettext.bindtextdomain('ddmd', localedir='locale')
+gettext.textdomain('ddmd')
+translate = gettext.gettext

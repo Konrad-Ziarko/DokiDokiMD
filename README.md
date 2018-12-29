@@ -21,15 +21,18 @@ Object used by the program are saved and loaded (with [Pickle](https://docs.pyth
 
 ## TUI Controls
 - Use <kbd>Shift</kbd>+<kbd>q</kbd> to quit.
+- Use <kbd>Shift</kbd>+<kbd>s</kbd> to save all data (except chapter images) - it will be autoloaded next time.
 - Use <kbd>←</kbd> and <kbd>→</kbd> to navigate between existing columns.
 - <kbd>Enter</kbd>, <kbd>Space</kbd> selects highlighted element from current column.
 - Use <kbd>Mouse</kbd> click to select elements from any visible column.
-- Use <kbd>Shift</kbd>+<kbd>d</kbd> to download content of highlighted column(not selected row in a column).
-- Use <kbd>Shift</kbd>+<kbd>s</kbd> to save all data (except chapter images) - it will be autoloaded next time.
+- Use chapter column buttons (Download, Save, Convert) or:
+    - Use <kbd>Shift</kbd>+<kbd>d</kbd> to download content of highlighted column(not selected row in a column).
+    - Use <kbd>Shift</kbd>+<kbd>w</kbd> to save pages from chapter as images.
+    - Use <kbd>Shift</kbd>+<kbd>c</kbd> to converted downloaded pages into PDF.
 - Use <kbd>Home</kbd> to jump to first element in current column.
 - Use <kbd>End</kbd> to jump to last element in current column.
-- Use <kbd>PageUp</kbd> to jump full screen len up.
-- Use <kbd>PageDown</kbd> to jump full screen len down.
+- Use <kbd>PageUp</kbd> to jump full screen length up.
+- Use <kbd>PageDown</kbd> to jump full screen length down.
 
 + Use <kbd>/</kbd> to start typing filter string (regular expression).
   - Use <kbd>Enter</kbd> to apply filter.

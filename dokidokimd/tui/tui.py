@@ -63,13 +63,28 @@ class ColumnChapters(urwid.WidgetWrap):
 
         response = urwid.AttrMap(urwid.Text([state, '\n', self.caption]), 'heading')
         done_button = MenuButton(_('Back'), self.go_back, self.bullet)
-        convert_button = MenuButton(_('Make PDF'), self.go_back, self.bullet)  # TODO make pdf
-        response_box = urwid.Filler(urwid.Pile([response, done_button, convert_button]))
+        download_button = MenuButton(_('Download Images'), self.download, self.bullet)
+        save_button = MenuButton(_('Save Images'), self.save_images, self.bullet)
+        convert_button = MenuButton(_('Make PDF'), self.make_pdf, self.bullet)
+        remove_button = MenuButton(_('Remove Images'), self.remove_images, self.bullet)
+        response_box = urwid.Filler(urwid.Pile([response, urwid.AttrMap(divider, 'line'), done_button, download_button, save_button, convert_button, remove_button]))
         self.root.chapter_number = self.row
         self.root.open_box(response_box)
 
     def go_back(self, button):
         self.root.set_focus(self.root.focus_position - 1)
+
+    def download(self, button):
+        self.root.window.download_content()
+
+    def save_images(self, button):
+        self.root.window.save_chapter_images()
+
+    def make_pdf(self, button):
+        self.root.window.convert_chapter_2_pdf()
+
+    def remove_images(self, button):
+        pass  # TODO
 
 
 class ColumnMangas(urwid.WidgetWrap):
@@ -125,7 +140,8 @@ class MainWidget(urwid.WidgetWrap):
 
 
 class RootWidget(urwid.Columns):
-    def __init__(self, controller):
+    def __init__(self, controller, window):
+        self.window = window
         self.controller = controller
         self.site_number = -1
         self.manga_number = -1
@@ -180,11 +196,83 @@ class Window:
         else:
             return keys
 
+    def download_content(self):
+        current_column = self.root.get_focus_column()
+        if current_column == 0:
+            self.change_footer(_("You can't download sites"))
+        elif current_column == 1:  # Site
+            self.change_footer(_('Indexing Site...'))
+            # self.controller.crawl_site(site_number)
+            # self.root.clear_content()
+            try:
+                self.controller.crawl_site(self.root.site_number)
+                self.root.fresh_open(self.sites_to_menu().menu)
+                self.change_footer(_('Indexed {} mangas').format(len(self.controller.manga_sites[self.root.site_number].mangas)))
+            except Exception as e:
+                self.change_footer('{}'.format(e))
+        elif current_column == 2:  # Manga
+            self.change_footer(_('Indexing Manga...'))
+            try:
+                manga = self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
+                no_of_chapters = len(manga.chapters)
+                self.root.fresh_open(self.sites_to_menu().menu)
+                self.change_footer(_('Indexed {} chapters for manga {}').format(no_of_chapters, manga.title))
+            except Exception as e:
+                self.change_footer('{}'.format(e))
+        elif current_column == 3:  # Chapter
+            self.change_footer(_('Downloading images...'))
+            try:
+                chapter = self.controller.crawl_chapter(self.root.site_number, self.root.manga_number, self.root.chapter_number)
+                no_of_pages = len(chapter.pages)
+                self.root.fresh_open(self.sites_to_menu().menu)
+                self.change_footer(_('Downloaded {} images of {}').format(no_of_pages, chapter.title))
+            except Exception as e:
+                self.change_footer("{}".format(e))
+        pass  # Details?
+
+    def save_chapter_images(self):
+        current_column = self.root.get_focus_column()
+        if current_column == 3:
+            self.change_footer(_('Saving pages to {}').format(self.controller.save_location_sites))
+            try:
+                chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
+                boolean, path = self.controller.save_images_from_chapter(chapter)
+                if boolean:
+                    # self.root.fresh_open(self.sites_to_menu().menu)
+                    self.change_footer(_('Pages of {} saved to {}').format(chapter.title, path))
+                else:
+                    self.change_footer(_('Pages of {} could not be saved to {}').format(chapter.title, path))
+            except Exception as e:
+                self.change_footer('{}'.format(e))
+        else:
+            self.change_footer(_('You have to be in a specific manga chapter'))
+
+    def convert_chapter_2_pdf(self):
+        current_column = self.root.get_focus_column()
+        if current_column == 3:
+            chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
+            if not chapter.downloaded:
+                self.change_footer(_('You have to download the chapter first (Shift + D)'))
+            else:
+                self.change_footer(_('Saving PDF to {}').format(self.controller.save_location_sites))
+                try:
+                    boolean, path = self.controller.convert_chapter_2_pdf(chapter)
+                    if boolean:
+                        # self.root.fresh_open(self.sites_to_menu().menu)
+                        self.change_footer(_('PDF of {} saved to {}').format(chapter.title, path))
+                    else:
+                        self.change_footer(_('PDF of {} could not be saved to {}').format(chapter.title, path))
+                except Exception as e:
+                    self.change_footer('{}'.format(e))
+        else:
+            self.change_footer(_('You have to be in a specific manga chapter'))
+
     def handle_key(self, key):
         if not isinstance(key, tuple):
-            current_column = self.root.get_focus_column()
             if key in 'Q':
                 exit_program(key)
+            elif key in 'H':
+                self.change_footer(self.help_text)
             elif key in 'S':  # Save data
                 try:
                     self.controller.store_sites()
@@ -192,57 +280,11 @@ class Window:
                 except Exception as e:
                     self.change_footer('{}'.format(e))
             elif key in 'C':  # Convert to PDF
-                pass
+                self.convert_chapter_2_pdf()
             elif key in 'W':  # Save images
-                if current_column == 3:
-                    self.change_footer(_('Saving pages to {}').format(self.controller.save_location_sites))
-                    try:
-                        chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
-                        boolean, path = self.controller.save_images_from_chapter(chapter)
-                        if boolean:
-                            # self.root.fresh_open(self.sites_to_menu().menu)
-                            self.change_footer(_('Pages of {} saved to {}').format(chapter.title, path))
-                        else:
-                            self.change_footer(_('Pages of {} could not be saved to {}').format(chapter.title, path))
-                    except Exception as e:
-                        self.change_footer('{}'.format(e))
-                else:
-                    self.change_footer(_('You have to be in a specific manga chapter'))
+                self.save_chapter_images()
             elif key in 'D':  # Download current column
-                if current_column == 0:
-                    self.change_footer(_("You can't download sites"))
-                elif current_column == 1:  # Site
-                    self.change_footer(_('Indexing Site...'))
-                    # self.controller.crawl_site(site_number)
-                    # self.root.clear_content()
-                    try:
-                        self.controller.crawl_site(self.root.site_number)
-                        self.root.fresh_open(self.sites_to_menu().menu)
-                        self.change_footer(_('Indexed {} mangas').format(len(self.controller.manga_sites[self.root.site_number].mangas)))
-                    except Exception as e:
-                        self.change_footer('{}'.format(e))
-                elif current_column == 2:  # Manga
-                    self.change_footer(_('Indexing Manga...'))
-                    try:
-                        self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
-                        manga = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number]
-                        no_of_chapters = len(manga.chapters)
-                        self.root.fresh_open(self.sites_to_menu().menu)
-                        self.change_footer(_('Indexed {} chapters for manga {}').format(no_of_chapters, manga.title))
-                    except Exception as e:
-                        self.change_footer('{}'.format(e))
-                elif current_column == 3:  # Chapter
-                    self.change_footer(_('Downloading images...'))
-                    try:
-                        self.controller.crawl_chapter(self.root.site_number, self.root.manga_number, self.root.chapter_number)
-                        chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
-                        no_of_pages = len(chapter.pages)
-                        self.root.fresh_open(self.sites_to_menu().menu)
-                        self.change_footer(_('Downloaded {} images of {}').format(no_of_pages, chapter.title))
-                    except Exception as e:
-                        self.change_footer("{}".format(e))
-                pass  # Details?
-
+                self.download_content()
             elif key in '/':  # Start typing filter
                 if not self.is_typing:
                     self.is_typing = True
@@ -268,19 +310,18 @@ class Window:
         return to_return
 
     def __init__(self, controller: DDMDController):
-        self.controller = controller  # type: DDMDController
-        self.frame = None  # type: urwid.Frame
-        self.footer = urwid.Text(_('DokiDokiMD  |  [D]ownload  [S]ave  [Q]uit'))  # type: urwid.Text
+        self.help_text = _('[S]aveDB  [D]ownload  [W]riteImages  [C]onvert2PDF  [H]elp  [Q]uit')
+        self.controller = controller                                            # type: DDMDController
+        self.frame = None                                                       # type: urwid.Frame
+        self.footer = urwid.Text(self.help_text)                                # type: urwid.Text
         self.header = urwid.Text(['WD>', self.controller.save_location_sites])  # type: urwid.Text
 
-        self.is_typing = False  # type: bool
-        self.regex_str = ''  # type: str
-        # for site in self.controller.manga_sites:
-        # self.manga_sites.add_choices(MangaSiteWidget(self.controller, '{}'.format(site.site_name), []))
-        self.root = RootWidget(self.controller)
+        self.is_typing = False                                                  # type: bool
+        self.regex_str = ''                                                     # type: str
+        self.root = RootWidget(self.controller, self)
 
         self.manga_data = self.sites_to_menu()
-        self.ml = None  # type: urwid.MainLoop
+        self.ml = None                                                          # type: urwid.MainLoop
 
     def start(self):
         self.root.open_box(self.manga_data.menu)

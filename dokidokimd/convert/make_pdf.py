@@ -6,7 +6,6 @@ from PIL import Image
 from fpdf import FPDF
 
 from dokidokimd import PROJECT_NAME
-from dokidokimd.core.manga_site import Chapter
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
 
@@ -18,26 +17,18 @@ module_logger = get_logger('make_pdf')
 class PDF:
     def __init__(self) -> None:
         self.num_pages = 0      # type: int
-        self.pages = list()     # type: List[bytes]
+        self.pages = list()     # type: List[str]
         self.builder = None     # type: FPDF
 
     def clear_pages(self) -> None:
         self.pages = list()
 
-    def add_page(self, image: bytes, index: int = None) -> None:
-        if index is None:
-            self.pages.append(image)
-        elif index is not None:
-            self.pages.insert(index, image)
-        self.num_pages += 1
-
     def add_page_from_file(self, image_path: str, index: int = None) -> None:
-        with(open(image_path, 'rb')) as f:
-            image = f.read()
-            if index is None:
-                self.pages.append(image)
-            elif index is not None:
-                self.pages.insert(index, image)
+        if index is None:
+            self.pages.append(image_path)
+        elif index is not None:
+            self.pages.insert(index, image_path)
+
         self.num_pages += 1
 
     def remove_page(self, index: int = None) -> None:
@@ -48,9 +39,6 @@ class PDF:
                 self.pages.pop(index)
 
             self.num_pages -= 1
-
-    def add_pages_from_chapter(self, chapter: Chapter) -> None:
-        self.pages = self.pages + chapter.pages
 
     def make_pdf(self, title: str) -> None:
         module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
@@ -97,11 +85,9 @@ class PDF:
         else:
             files = [join(dir_path, f) for f in listdir(dir_path) if
                      isfile(join(dir_path, f) and f.endswith('.{}'.format(extension_filter)))]
-
-        for file in files:
-            with(open(file, 'rb')) as f:
-                image = f.read()
-                self.add_page(image)
+        files = sorted(files)
+        for f in files:
+            self.add_page_from_file(f)
 
     def save_pdf(self, path: str) -> None:
         module_logger.debug(_('PDF saved to a {} file.').format(path))

@@ -38,6 +38,3 @@ if __name__ == '__main__':
         print(encoded_string)
 
         img = b64_to_image(encoded_string)
-        img.show()
-
-    pass
