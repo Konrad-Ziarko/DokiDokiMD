@@ -189,16 +189,11 @@ class DDMDController:
 
     def convert_chapter_2_pdf(self, chapter: Chapter) -> Tuple[bool, str]:
         pdf_dir = join(self.save_location_sites, 'converted', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
-        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name, chapter.manga_ref.get_path_safe_title())
-        if not isdir(images_dir):
-            return False, pdf_dir
-        if not listdir(images_dir):
-            return False, pdf_dir
         try:
             if not isdir(pdf_dir):
                 makedirs(pdf_dir, exist_ok=True)
             self.pdf_converter.clear_pages()
-            self.pdf_converter.add_dir(images_dir)
+            self.pdf_converter.add_chapter(chapter)
             self.pdf_converter.make_pdf(chapter.title)
             self.pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()))
             self.pdf_converter.clear_pages()

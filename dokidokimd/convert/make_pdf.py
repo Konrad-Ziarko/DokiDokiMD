@@ -1,11 +1,15 @@
+import base64
+import imghdr
+from io import BytesIO
 from os import listdir
 from os.path import isfile, join
 from typing import List
 
 from PIL import Image
-from fpdf import FPDF
 
 from dokidokimd import PROJECT_NAME
+from dokidokimd.convert.FPDFV2 import FPDFV2
+from dokidokimd.core.manga_site import Chapter
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
 
@@ -16,37 +20,57 @@ module_logger = get_logger('make_pdf')
 
 class PDF:
     def __init__(self) -> None:
-        self.pages = list()     # type: List[str]
-        self.builder = None     # type: FPDF
+        self.pages_binary = list()  # type: List[bytes]
+        self.files_list = list()  # type: List[str]
+        self.builder = None  # type: FPDFV2
 
     def clear_pages(self) -> None:
-        self.pages = list()
+        self.pages_binary = list()
+
+    def add_chapter(self, chapter: Chapter):
+        self.pages_binary += chapter.pages
 
     def add_page_from_file(self, image_path: str, index: int = None) -> None:
         if index is None:
-            self.pages.append(image_path)
+            self.files_list.append(image_path)
         elif index is not None:
-            self.pages.insert(index, image_path)
+            self.files_list.insert(index, image_path)
 
-    def remove_page(self, index: int = None) -> None:
-        if len(self.pages) >= 1:
-            if index is None:
-                self.pages.pop(len(self.pages) - 1)
-            elif index is not None:
-                self.pages.pop(index)
+    def add_dir(self, dir_path: str, extension_filter: str = None) -> None:
+        module_logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
+        if extension_filter is None:
+            files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
+        else:
+            files = [join(dir_path, f) for f in listdir(dir_path) if
+                     isfile(join(dir_path, f) and f.endswith('.{}'.format(extension_filter)))]
+        files = sorted(files)
+        self.files_list += files
 
     def make_pdf(self, title: str) -> None:
         module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
-        cover = Image.open(self.pages[0])
-        width, height = cover.size
+        use_binary = False
+        if len(self.pages_binary) > 0:
+            use_binary = True
+            width, height = Image.open(BytesIO(self.pages_binary[0])).size
+        else:
+            width, height = Image.open(self.files_list[0]).size
         module_logger.debug(_('Cover size {}x{}.'.format(width, height)))
-        self.builder = FPDF(unit='pt', format=[width, height])
 
+        self.builder = FPDFV2(unit='pt', format=[width, height])
+        self.builder.compress = False
         self.builder.set_title(title)
         self.builder.set_author(PROJECT_NAME)
 
-        for i in range(len(self.pages)):
-            width2, height2 = Image.open(self.pages[i]).size
+        if use_binary:
+            num_pages = len(self.pages_binary)
+        else:
+            num_pages = len(self.files_list)
+
+        for i in range(num_pages):
+            if use_binary:
+                width2, height2 = Image.open(BytesIO(self.pages_binary[0])).size
+            else:
+                width2, height2 = Image.open(self.pages_binary[i]).size
             if width2 > height2:
                 orientation = 'L'
             else:
@@ -66,23 +90,20 @@ class PDF:
                     y = (height - height2 / w) / 2
                     height2 = 0
 
-            if orientation is 'L':
-                self.builder.image(self.pages[i], y, x, width2, height2)
+            if use_binary:
+                img = BytesIO(self.pages_binary[i])
+                img_type = imghdr.what(img)
+                if orientation is 'L':
+                    self.builder.image('', y, x, width2, height2, type=img_type, link=None, file=img)
+                else:
+                    self.builder.image('', x, y, width2, height2, type=img_type, link=None, file=img)
             else:
-                self.builder.image(self.pages[i], x, y, width2, height2)
+                if orientation is 'L':
+                    self.builder.image(self.pages_binary[i], y, x, width2, height2)
+                else:
+                    self.builder.image(self.pages_binary[i], x, y, width2, height2)
 
             module_logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
-
-    def add_dir(self, dir_path: str, extension_filter: str = None) -> None:
-        module_logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
-        if extension_filter is None:
-            files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
-        else:
-            files = [join(dir_path, f) for f in listdir(dir_path) if
-                     isfile(join(dir_path, f) and f.endswith('.{}'.format(extension_filter)))]
-        files = sorted(files)
-        for f in files:
-            self.add_page_from_file(f)
 
     def save_pdf(self, path: str) -> None:
         module_logger.debug(_('PDF saved to a {} file.').format(path))
@@ -90,4 +111,35 @@ class PDF:
 
 
 if __name__ == '__main__':
-    pass
+    with open('/home/konrad/PycharmProjects/DokiDokiMD/dokidokimd/sites/downloaded/GoodManga/Hamaya-kun_/001_Hamaya-kun_ Chapter 1.jpeg', 'rb') as f:
+        img = f.read()
+    mem_file = BytesIO(img)
+    b64_mem = BytesIO(base64.b64encode(img))
+    cover = Image.open(BytesIO(img))
+    width, height = cover.size
+    width2, height2 = cover.size
+    builder = FPDFV2(unit='pt', format=[width, height])
+    builder.compress = False
+    builder.set_title("asdasd")
+    builder.set_author(PROJECT_NAME)
+    builder.add_page('P')
+
+    x = y = 0
+    if width2 != width and height2 != height:
+        w = width2 / width
+        h = height2 / height
+        if w < h:
+            height2 = height
+            x = (width - width2 / h) / 2
+            width2 = 0
+        else:
+            width2 = width
+            y = (height - height2 / w) / 2
+            height2 = 0
+
+    i = Image.open(BytesIO(img))
+    image_data = BytesIO()
+    i.save(image_data, format='jpeg')
+
+    builder.image('001_Hamaya-kun_ Chapter 1.jpeg', y, x, width, height, type='', link=None, file=mem_file)
+    builder.output('/home/konrad/PycharmProjects/DokiDokiMD/dokidokimd/sites/downloaded/GoodManga/Hamaya-kun_/test', 'F')
