@@ -333,17 +333,17 @@ class Window:
 
     def __init__(self, controller: DDMDController):
         self.help_text = _('[S]aveDB  [D]ownload  [W]riteImages  [C]onvert2PDF  [R]emoveImages  [H]elp  [Q]uit')
-        self.controller = controller                                            # type: DDMDController
-        self.frame = None                                                       # type: urwid.Frame
-        self.footer = urwid.Text(self.help_text)                                # type: urwid.Text
+        self.controller = controller  # type: DDMDController
+        self.frame = None  # type: urwid.Frame
+        self.footer = urwid.Text(self.help_text)  # type: urwid.Text
         self.header = urwid.Text(['WD>', self.controller.save_location_sites])  # type: urwid.Text
 
-        self.is_typing = False                                                  # type: bool
-        self.regex_str = ''                                                     # type: str
+        self.is_typing = False  # type: bool
+        self.regex_str = ''  # type: str
         self.root = RootWidget(self.controller, self)
 
         self.manga_data = self.sites_to_menu()
-        self.ml = None                                                          # type: urwid.MainLoop
+        self.ml = None  # type: urwid.MainLoop
 
     def start(self):
         self.root.open_box(self.manga_data.menu)
@@ -356,7 +356,7 @@ def main():
     from sys import platform
 
     cmd = ''
-    python = 'python3.7'
+    python = 'python3'
     if platform == 'linux' or platform == 'linux2':
         cmd = 'gnome-terminal --  {python} {path}'
     elif platform == 'darwin':
@@ -371,6 +371,8 @@ def main():
         # program started without command line interface
         # start itself in appropriate terminal
         os.system(cmd.format(python=python, path=__file__))
+        # import subprocess
+        # proc = subprocess.Popen(args=["gnome-terminal", "--command={} {}".format(python, __file__)])
 
 
 if __name__ == '__main__':
