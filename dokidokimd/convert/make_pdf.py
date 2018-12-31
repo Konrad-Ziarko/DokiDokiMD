@@ -16,7 +16,6 @@ module_logger = get_logger('make_pdf')
 
 class PDF:
     def __init__(self) -> None:
-        self.num_pages = 0      # type: int
         self.pages = list()     # type: List[str]
         self.builder = None     # type: FPDF
 
@@ -29,16 +28,12 @@ class PDF:
         elif index is not None:
             self.pages.insert(index, image_path)
 
-        self.num_pages += 1
-
     def remove_page(self, index: int = None) -> None:
-        if self.num_pages >= 1:
+        if len(self.pages) >= 1:
             if index is None:
-                self.pages.pop(self.num_pages - 1)
+                self.pages.pop(len(self.pages) - 1)
             elif index is not None:
                 self.pages.pop(index)
-
-            self.num_pages -= 1
 
     def make_pdf(self, title: str) -> None:
         module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
@@ -50,7 +45,7 @@ class PDF:
         self.builder.set_title(title)
         self.builder.set_author(PROJECT_NAME)
 
-        for i in range(self.num_pages):
+        for i in range(len(self.pages)):
             width2, height2 = Image.open(self.pages[i]).size
             if width2 > height2:
                 orientation = 'L'

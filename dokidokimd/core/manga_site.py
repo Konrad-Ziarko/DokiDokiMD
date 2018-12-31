@@ -2,8 +2,6 @@ import pickle
 import re
 from typing import List
 
-from PIL import Image
-
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
 
@@ -30,7 +28,7 @@ class Chapter:
         self.manga_ref = None       # type: Manga
         self.title = title          # type: str
         self.url = None             # type: str
-        self.pages = []             # type: List[Image]
+        self.pages = []             # type: List[bytes]
 
         self.downloaded = False     # type: bool
         self.converted = False      # type: bool
