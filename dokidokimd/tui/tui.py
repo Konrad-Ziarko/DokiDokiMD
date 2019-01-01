@@ -235,27 +235,42 @@ class Window:
 
     def set_focus(self, focus_position):
         current_column = self.root.get_focus_column()
+        success = False
         try:
             if current_column == 0:
                 focus_skip = self.main_widget.focus_skip
                 self.main_widget.menu.original_widget.set_focus(focus_skip+focus_position)
+                success = True
             elif current_column == 1:  # Site
                 x = self.main_widget.menu.base_widget.get_focus()[1]
                 widget = self.main_widget.menu.base_widget.body[x].menu.base_widget
 
                 focus_skip = self.main_widget.focus_skip
-                widget.set_focus(focus_skip + focus_position)
+                for position in range(widget.body.__len__()):
+                    if position >= focus_skip:
+                        if '({})'.format(focus_position) in widget.body[position].caption:
+                            widget.set_focus(position)
+                            success = True
+                            break
             elif current_column == 2:  # Manga
                 x = self.main_widget.menu.base_widget.get_focus()[1]
                 y = self.main_widget.menu.base_widget.body[x].menu.base_widget.get_focus()[1]
                 widget = self.main_widget.menu.base_widget.body[x].menu.base_widget.body[y].menu.base_widget
 
                 focus_skip = self.main_widget.focus_skip
-                widget.set_focus(focus_skip + focus_position)
+                for position in range(widget.body.__len__()):
+                    if position >= focus_skip:
+                        if '({})'.format(focus_position) in widget.body[position].caption:
+                            widget.set_focus(position)
+                            success = True
+                            break
             else:
                 self.change_footer(_('Cannot jump here'))
                 return
-            self.change_footer(_('Jumped to row: {}').format(focus_position))
+            if success:
+                self.change_footer(_('Jumped to row: {}').format(focus_position))
+            else:
+                raise IndexError()
         except IndexError:
             self.change_footer(_("Wrong index value!"))
 
