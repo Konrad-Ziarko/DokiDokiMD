@@ -4,9 +4,13 @@ import os
 import urwid
 
 from dokidokimd.core.controller import DDMDController
+from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.translation.translator import translate
+from dokidokimd.dd_logger.dd_logger import init_logging
 
 _ = translate
+
+module_logger = get_logger('tui')
 
 
 def exit_program(key):
@@ -248,12 +252,16 @@ class Window:
 
                 focus_skip = self.main_widget.focus_skip
                 widget.set_focus(focus_skip + focus_position)
+            else:
+                self.change_footer(_('Cannot jump here'))
+                return
             self.change_footer(_('Jumped to row: {}').format(focus_position))
         except IndexError:
             self.change_footer(_("Wrong index value!"))
 
     def download_content(self):
         current_column = self.root.get_focus_column()
+        module_logger.info(_('Downloading for column {}').format(current_column))
         if current_column == 0:
             self.change_footer(_("You can't download sites"))
         elif current_column == 1:  # Site
@@ -261,40 +269,47 @@ class Window:
             # self.controller.crawl_site(site_number)
             # self.root.clear_content()
             try:
+                module_logger.info(_('Downloading mangas for site {}').format(self.controller.manga_sites[self.root.site_number].site_name))
                 self.controller.crawl_site(self.root.site_number)
                 self.main_widget = self.sites_to_menu()
                 self.root.fresh_open(self.main_widget.menu)
                 self.change_footer(_('Indexed {} mangas').format(len(self.controller.manga_sites[self.root.site_number].mangas)))
             except Exception as e:
-                self.change_footer('{}'.format(e))
+                self.change_footer(_('Error downloading mangas for site {}').format(self.controller.manga_sites[self.root.site_number].site_name))
+                module_logger.error(_('Error downloading mangas for site {}. Exception message: {}').format(self.controller.manga_sites[self.root.site_number].site_name, e))
         elif current_column == 2:  # Manga
             self.change_footer(_('Indexing Manga...'))
+            manga = self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
             try:
-                manga = self.controller.crawl_manga(self.root.site_number, self.root.manga_number)
+                module_logger.info(_('Downloading chapters for manga {}').format(manga.title))
                 no_of_chapters = len(manga.chapters)
                 self.main_widget = self.sites_to_menu()
                 self.root.fresh_open(self.main_widget.menu)
                 self.change_footer(_('Indexed {} chapters for manga {}').format(no_of_chapters, manga.title))
             except Exception as e:
-                self.change_footer('{}'.format(e))
+                self.change_footer(_('Error downloading chapters for manga {}').format(manga.title))
+                module_logger.error(_('Error downloading chapters for manga {}. Exception message: {}').format(manga.title, e))
         elif current_column == 3:  # Chapter
             self.change_footer(_('Downloading images...'))
+            chapter = self.controller.crawl_chapter(self.root.site_number, self.root.manga_number, self.root.chapter_number)
             try:
-                chapter = self.controller.crawl_chapter(self.root.site_number, self.root.manga_number, self.root.chapter_number)
+                module_logger.info(_('Downloading images for chapter {}').format(chapter.title))
                 no_of_pages = len(chapter.pages)
                 self.main_widget = self.sites_to_menu()
                 self.root.fresh_open(self.main_widget.menu)
                 self.change_footer(_('Downloaded {} images of {}').format(no_of_pages, chapter.title))
             except Exception as e:
-                self.change_footer("{}".format(e))
+                self.change_footer(_('Error downloading images for chapter {}').format(chapter.title))
+                module_logger.error(_('Error downloading images for chapter {}. Exception message: {}').format(chapter.title, e))
         pass  # Details?
 
     def save_chapter_images(self):
         current_column = self.root.get_focus_column()
         if current_column == 3:
             self.change_footer(_('Saving pages to {}').format(self.controller.save_location_sites))
+            chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
             try:
-                chapter = self.controller.manga_sites[self.root.site_number].mangas[self.root.manga_number].chapters[self.root.chapter_number]
+                module_logger.info(_('Saving images for chapter {}').format(chapter.title))
                 boolean, path = self.controller.save_images_from_chapter(chapter)
                 if boolean:
                     # self.root.fresh_open(self.sites_to_menu().menu)
@@ -302,7 +317,8 @@ class Window:
                 else:
                     self.change_footer(_('Pages of {} could not be saved to {}').format(chapter.title, path))
             except Exception as e:
-                self.change_footer('{}'.format(e))
+                self.change_footer(_('Error saving images for chapter {}').format(chapter.title))
+                module_logger.error(_('Error saving images for chapter {}. Exception message: {}').format(chapter.title, e))
         else:
             self.change_footer(_('You have to be in a specific manga chapter'))
 
@@ -322,7 +338,8 @@ class Window:
                     else:
                         self.change_footer(_('PDF of {} could not be saved to {}').format(chapter.title, path))
                 except Exception as e:
-                    self.change_footer('{}'.format(e))
+                    self.change_footer(_('Error convering to pdf for chapter {}').format(chapter.title))
+                    module_logger.error(_('Error convering to pdf for chapter {}. Exception message: {}').format(chapter.title, e))
         else:
             self.change_footer(_('You have to be in a specific manga chapter'))
 
@@ -342,7 +359,8 @@ class Window:
                     else:
                         self.change_footer(_('Images of {} could not be removed from {}').format(chapter.title, path))
                 except Exception as e:
-                    self.change_footer('{}'.format(e))
+                    self.change_footer(_('Error removing images for chapter {}').format(chapter.title))
+                    module_logger.error(_('Error emoving images for chapter {}. Exception message: {}').format(chapter.title, e))
         else:
             self.change_footer(_('You have to be in a specific manga chapter'))
 
@@ -356,8 +374,10 @@ class Window:
                 try:
                     self.controller.store_sites()
                     self.change_footer(_('Data saved!'))
+                    module_logger.info(_('Data saved!'))
                 except Exception as e:
-                    self.change_footer('{}'.format(e))
+                    self.change_footer(_('Error while saving DB'))
+                    module_logger.error(_('Error while saving DB. Exception message: {}').format(e))
             elif key in 'C':  # Convert to PDF
                 self.convert_chapter_2_pdf()
             elif key in 'W':  # Save images
@@ -435,6 +455,7 @@ def main():
         cmd = 'start cmd /K {python} {path}'
 
     if sys.__stdin__.isatty():  # stdin.isatty():
+        init_logging()
         w = Window(DDMDController())
         w.start()
     else:

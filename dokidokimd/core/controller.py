@@ -268,33 +268,33 @@ class DDMDController:
             else:
                 with open(path_to_file, 'wb') as the_file:
                     the_file.write(data)
-
+        module_logger.info(_('Data saved to DB'))
         return True
 
     def load_sites(self) -> bool:
         self.manga_sites = []
         if not isdir(self.save_location_sites):
             makedirs(self.save_location_sites, exist_ok=True)
-            # fresh run
+            module_logger.info(_('No saved state. Creating dir for fresh DB'))
             return False
         for file_name in listdir(self.save_location_sites):
             if not file_name.endswith('.old'):
                 if isfile(join(self.save_location_sites, file_name)):
-                    # try to load state
+                    module_logger.info(_('Trying to load last state for {}').format(file_name))
                     try:
                         with open(join(self.save_location_sites, file_name), 'rb') as the_file:
                             data = the_file.read()
                             manga_site = load_dumped_site(data)
                             self.manga_sites.append(manga_site)
                     except Exception as e1:
-                        # could not load last state, trying older one
+                        module_logger.warning(_('Could not load last state, trying older one. Error message: {}').format(e1))
                         try:
                             with open('{}.old'.format(join(self.save_location_sites, file_name)), 'rb') as the_file:
                                 data = the_file.read()
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)
                         except Exception as e2:
-                            pass
+                            module_logger.warning(_('Could not load old last state either. Error message: {}').format(e2))
 
 
 if __name__ == '__main__':

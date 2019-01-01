@@ -1,4 +1,3 @@
-import base64
 import imghdr
 from io import BytesIO
 from os import listdir
@@ -54,7 +53,6 @@ class PDF:
             width, height = Image.open(BytesIO(self.pages_binary[0])).size
         else:
             width, height = Image.open(self.files_list[0]).size
-        module_logger.debug(_('Cover size {}x{}.'.format(width, height)))
 
         self.builder = FPDFV2(unit='pt', format=[width, height])
         self.builder.compress = False
@@ -106,40 +104,9 @@ class PDF:
             module_logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
 
     def save_pdf(self, path: str) -> None:
-        module_logger.debug(_('PDF saved to a {} file.').format(path))
         self.builder.output(path, 'F')
+        module_logger.info(_('PDF saved to a {} file.').format(path))
 
 
 if __name__ == '__main__':
-    with open('/home/konrad/PycharmProjects/DokiDokiMD/dokidokimd/sites/downloaded/GoodManga/Hamaya-kun_/001_Hamaya-kun_ Chapter 1.jpeg', 'rb') as f:
-        img = f.read()
-    mem_file = BytesIO(img)
-    b64_mem = BytesIO(base64.b64encode(img))
-    cover = Image.open(BytesIO(img))
-    width, height = cover.size
-    width2, height2 = cover.size
-    builder = FPDFV2(unit='pt', format=[width, height])
-    builder.compress = False
-    builder.set_title("asdasd")
-    builder.set_author(PROJECT_NAME)
-    builder.add_page('P')
-
-    x = y = 0
-    if width2 != width and height2 != height:
-        w = width2 / width
-        h = height2 / height
-        if w < h:
-            height2 = height
-            x = (width - width2 / h) / 2
-            width2 = 0
-        else:
-            width2 = width
-            y = (height - height2 / w) / 2
-            height2 = 0
-
-    i = Image.open(BytesIO(img))
-    image_data = BytesIO()
-    i.save(image_data, format='jpeg')
-
-    builder.image('001_Hamaya-kun_ Chapter 1.jpeg', y, x, width, height, type='', link=None, file=mem_file)
-    builder.output('/home/konrad/PycharmProjects/DokiDokiMD/dokidokimd/sites/downloaded/GoodManga/Hamaya-kun_/test', 'F')
+    pass
