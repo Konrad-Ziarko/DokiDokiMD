@@ -1,5 +1,6 @@
 # DokiDokiMD
 Python manga downloader.
+Playground for my first tui project.
 
 # Disclaimer
 THIS TOOL HAS BEEN RELEASED JUST FOR TESTING PURPOSES.
