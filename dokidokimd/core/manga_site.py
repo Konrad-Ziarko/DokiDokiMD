@@ -11,6 +11,7 @@ module_logger = get_logger('manga_site')
 
 PathSafeRegEx = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
 PathSafeReplaceChar = r'_'
+CompiledRegEx = re.compile(PathSafeRegEx, re.UNICODE)
 
 AvailableSites = {
     'GoodManga': 'http://www.goodmanga.net/',
@@ -34,8 +35,7 @@ class Chapter:
         self.converted = False      # type: bool
 
     def get_path_safe_title(self) -> str:
-        pattern = re.compile(PathSafeRegEx, re.UNICODE)
-        return pattern.sub(PathSafeReplaceChar, self.title)
+        return CompiledRegEx.sub(PathSafeReplaceChar, self.title)
 
     def dump(self):
         return pickle.dumps(self)
@@ -78,8 +78,7 @@ class Manga:
         self.downloaded = False  # type: bool
 
     def get_path_safe_title(self) -> str:
-        pattern = re.compile(PathSafeRegEx, re.UNICODE)
-        return pattern.sub(PathSafeReplaceChar, self.title)
+        return CompiledRegEx.sub(PathSafeReplaceChar, self.title)
 
     def add_chapter(self, chapter) -> None:
         chapter.manga_ref = self
