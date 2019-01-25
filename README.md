@@ -70,7 +70,7 @@ To post any issue use available issue templates:
 
 ## Dependencies
 - [Urwid](https://github.com/urwid/urwid)
-- [PyFPDF](https://github.com/reingart/pyfpdf)(custome)
+- [PyFPDF](https://github.com/reingart/pyfpdf)(custom)
 
 ## License
 This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE) file for details
