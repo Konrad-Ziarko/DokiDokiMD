@@ -1,13 +1,8 @@
 language: python
 
-- provider: script
-    script: python scripts/compile.py
-- provider: script
-    script: python installer/installer.py
-
 install:
 
-script: python setup.py test
+script: python setup.py build
 
 jobs:
   include:
