@@ -5,7 +5,6 @@ from functools import wraps
 from io import BytesIO
 from urllib.request import urlopen
 
-
 from fpdf import FPDF
 from fpdf.php import substr, sprintf
 from fpdf.py3k import PY3K, b
@@ -15,8 +14,8 @@ def make_re(regex):
     return re.compile(regex, flags=re.DOTALL)
 
 
-def image_is_jpeg(type):
-    return type == 'jpg' or type == 'jpeg'
+def image_is_jpeg(img_type):
+    return img_type == 'jpg' or img_type == 'jpeg'
 
 
 # noinspection PyMethodOverriding
@@ -220,7 +219,7 @@ class FPDFV2(FPDF):
         return wrapper
 
     @check_page
-    def image(self, name, x=None, y=None, w=0, h=0, type='', link='', file=None):
+    def image(self, name, tmp_x=None, y=None, w=0, h=0, type='', link='', file=None):
         if name not in self.images:
             # First use of image, get info
             if type == '':
@@ -284,16 +283,17 @@ class FPDFV2(FPDF):
                     and not self.in_footer
                     and self.accept_page_break):
                 # Automatic page break
-                x = self.x
+                tmp_x = self.x
                 self.add_page()
-                self.x = x
+                self.x = tmp_x
             y = self.y
             self.y += h
 
-        if x is None: x = self.x
+        if tmp_x is None:
+            tmp_x = self.x
         self._out(sprintf('q %.2f 0 0 %.2f %.2f %.2f cm /I%d Do Q',
                           w * self.k, h * self.k,
-                          x * self.k, (self.h - (y + h)) * self.k,
+                          tmp_x * self.k, (self.h - (y + h)) * self.k,
                           info['i']))
         if link:
-            self.link(x, y, w, h, link)
+            self.link(tmp_x, y, w, h, link)

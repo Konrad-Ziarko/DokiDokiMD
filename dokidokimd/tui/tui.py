@@ -1,12 +1,13 @@
+import os
 import re
 import sys
-import os
+
 import urwid
 
 from dokidokimd.core.controller import DDMDController
 from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.translation.translator import translate
 from dokidokimd.dd_logger.dd_logger import init_logging
+from dokidokimd.translation.translator import translate
 
 _ = translate
 
@@ -239,7 +240,7 @@ class Window:
         try:
             if current_column == 0:
                 focus_skip = self.main_widget.focus_skip
-                self.main_widget.menu.original_widget.set_focus(focus_skip+focus_position)
+                self.main_widget.menu.original_widget.set_focus(focus_skip + focus_position)
                 success = True
             elif current_column == 1:  # Site
                 x = self.main_widget.menu.base_widget.get_focus()[1]
@@ -316,7 +317,7 @@ class Window:
             except Exception as e:
                 self.change_footer(_('Error downloading images for chapter {}').format(chapter.title))
                 module_logger.error(_('Error downloading images for chapter {}. Exception message: {}').format(chapter.title, e))
-        pass  # Details?
+        # Details?
 
     def save_chapter_images(self):
         current_column = self.root.get_focus_column()
@@ -425,12 +426,12 @@ class Window:
                         if hasattr(chapter, 'pages') and chapter.pages:
                             pages = len(chapter.pages)
                         idx3 = manga.chapters.index(chapter)
-                        chapters.append(ColumnChapters(self.root, '({})'.format(idx3)+chapter.title, manga.chapters.index(chapter), chapter.downloaded, chapter.converted, pages))
+                        chapters.append(ColumnChapters(self.root, '({})'.format(idx3) + chapter.title, manga.chapters.index(chapter), chapter.downloaded, chapter.converted, pages))
                     idx2 = site.mangas.index(manga)
-                    mangas.append(ColumnMangas(self.root, '({})'.format(idx2)+manga.title, site.mangas.index(manga), chapters))
+                    mangas.append(ColumnMangas(self.root, '({})'.format(idx2) + manga.title, site.mangas.index(manga), chapters))
             # add to columnsites
             idx1 = self.controller.manga_sites.index(site)
-            sites.append(ColumnSites(self.root, '({})'.format(idx1)+site.site_name, self.controller.manga_sites.index(site), mangas))
+            sites.append(ColumnSites(self.root, '({})'.format(idx1) + site.site_name, self.controller.manga_sites.index(site), mangas))
         to_return = MainWidget(self.root, _('Manga Sites ({})').format(len(self.controller.manga_sites)), sites)
         return to_return
 

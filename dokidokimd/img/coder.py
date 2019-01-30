@@ -2,13 +2,9 @@ import base64
 import io
 from enum import Enum
 
-from dokidokimd.dd_logger.dd_logger import get_logger
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 from PIL import Image
+
+from dokidokimd.dd_logger.dd_logger import get_logger
 
 module_logger = get_logger('coder')
 

@@ -7,6 +7,7 @@ from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites, MangaSite
 from dokidokimd.dd_logger.dd_logger import get_logger
 from dokidokimd.net.crawler.base_crawler import BaseCrawler
 from dokidokimd.translation.translator import translate
+
 _ = translate
 
 module_logger = get_logger('crawler.goodmanga')
@@ -16,7 +17,7 @@ class GoodMangaCrawler(BaseCrawler):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.base_url = AvailableSites['GoodManga']     # type: str
+        self.base_url = AvailableSites['GoodManga']  # type: str
 
     def crawl_index(self, manga_site: MangaSite) -> None:
         start_url = urljoin(self.base_url, '/manga-list')
