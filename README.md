@@ -1,4 +1,7 @@
 # DokiDokiMD
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/76fa5ed5e113414fbb2d7ae6b12d00e1)](https://app.codacy.com/app/Konrad-Ziarko/DokiDokiMD?utm_source=github.com&utm_medium=referral&utm_content=Konrad-Ziarko/DokiDokiMD&utm_campaign=Badge_Grade_Dashboard)
+
 Python manga downloader.
 Playground for my first tui project.
 
