@@ -3,40 +3,39 @@ from urllib.parse import urljoin
 import requests
 from lxml import html
 
-from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites, MangaSite
-from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.net.crawler.base_crawler import BaseCrawler
-from dokidokimd.translation.translator import translate
+from dokidokimd.manga_site import Manga, Chapter, available_sites, MangaSite
+from dokidokimd.tools.kz_logger import KzLogger
+from dokidokimd.tools.crawlers.base_crawler import BaseCrawler
+from dokidokimd.tools.translator import translate as _
 
-_ = translate
-
-module_logger = get_logger('crawler.mangapanda')
+module_logger = KzLogger().get_logger('crawlers.kissmanga')
 
 
-class MangaPandaCrawler(BaseCrawler):
+class KissMangaCrawler(BaseCrawler):
+    # TODO use selenium to bypass cloudflair
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.base_url = AvailableSites['MangaPanda']  # type: str
+        self.base_url = available_sites['KissManga']  # type: str
 
     def crawl_index(self, manga_site: MangaSite) -> None:
-        start_url = urljoin(self.base_url, '/alphabetical')
+        start_url = urljoin(self.base_url, '/MangaList')
 
-        response = requests.get(start_url)
+        with requests.Session() as session:
+            response = session.get(start_url, allow_redirects=True)
+            if response.status_code == 200:
+                manga_site.url = self.base_url
 
-        if response.status_code == 200:
-            manga_site.url = self.base_url
+                tree = html.fromstring(response.content)
 
-            tree = html.fromstring(response.content)
+                for element in tree.xpath('//*[@id="leftside"]/div/div[2]/div[4]/table/tr/td[1]/a'):
+                    manga = Manga()
+                    manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                    manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
-            for element in tree.xpath('//*[@id="wrapper_body"]/div/div/div/ul/li/a'):
-                manga = Manga()
-                manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
-
-                manga_site.add_manga(manga)
-        else:
-            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+                    manga_site.add_manga(manga)
+            else:
+                raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def crawl_detail(self, manga: Manga) -> None:
         start_url = manga.url

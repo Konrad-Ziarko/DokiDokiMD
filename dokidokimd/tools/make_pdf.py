@@ -7,14 +7,12 @@ from typing import List
 from PIL import Image
 
 from dokidokimd import PROJECT_NAME
-from dokidokimd.convert.FPDFV2 import FPDFV2
-from dokidokimd.core.manga_site import Chapter
-from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.translation.translator import translate
+from dokidokimd.tools.FPDFV2 import FPDFV2
+from dokidokimd.manga_site import Chapter
+from dokidokimd.tools.kz_logger import KzLogger
+from dokidokimd.tools.translator import translate as _
 
-_ = translate
-
-module_logger = get_logger('make_pdf')
+module_logger = KzLogger().get_logger('make_pdf')
 
 
 class PDF:

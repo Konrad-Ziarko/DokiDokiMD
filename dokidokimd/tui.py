@@ -4,14 +4,11 @@ import sys
 
 import urwid
 
-from dokidokimd.core.controller import DDMDController
-from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.dd_logger.dd_logger import init_logging
-from dokidokimd.translation.translator import translate
+from dokidokimd.controller import DDMDController
+from dokidokimd.tools.kz_logger import KzLogger
+from dokidokimd.tools.translator import translate as _
 
-_ = translate
-
-module_logger = get_logger('tui')
+module_logger = KzLogger().get_logger('tui')
 
 
 def exit_program(key):
@@ -462,7 +459,7 @@ def main():
     from sys import platform
 
     cmd = ''
-    python = 'python3'
+    python = 'python'
     if platform == 'linux' or platform == 'linux2':
         cmd = 'gnome-terminal --  {python} {path}'
     elif platform == 'darwin':
@@ -471,7 +468,7 @@ def main():
         cmd = 'start cmd /K {python} {path}'
 
     if sys.__stdin__.isatty():  # stdin.isatty():
-        init_logging()
+        logger = KzLogger('ddmd')
         w = Window(DDMDController())
         w.start()
     else:

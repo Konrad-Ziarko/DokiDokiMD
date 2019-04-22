@@ -1,4 +1,5 @@
-from dokidokimd.tui.tui import main
+from dokidokimd.tui import main
+from dokidokimd.tools.kz_logger import KzLogger
 
-if __name__ == '__main__':
-    main()
+KzLogger('ddmd')
+main()

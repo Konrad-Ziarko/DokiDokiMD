@@ -23,7 +23,7 @@ It is able to convert downloaded images(regardles of orientation) into single pd
 ## Overview
 Data downloaded by the program is stored in a files. Each site has its own file (database).
 <br>
-Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](./dokidokimd/core/manga_site.py) to see what is stored.
+Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](dokidokimd/manga_site.py) to see what is stored.
 *Downloaded images are not stored in files - they are only present when downloaded, saving process gets rid of them*.
 
 ## TUI Controls
