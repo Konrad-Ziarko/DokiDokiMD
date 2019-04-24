@@ -3,12 +3,12 @@ from urllib.parse import urljoin
 import requests
 from lxml import html
 
-from dokidokimd.manga_site import Manga, Chapter, available_sites, MangaSite
-from dokidokimd.tools.kz_logger import KzLogger
-from dokidokimd.tools.crawlers.base_crawler import BaseCrawler
-from dokidokimd.tools.translator import translate as _
+from manga_site import Manga, Chapter, available_sites, MangaSite
+from tools.kz_logger import get_logger
+from tools.crawlers.base_crawler import BaseCrawler
+from tools.translator import translate as _
 
-module_logger = KzLogger().get_logger('crawlers.kissmanga')
+logger = get_logger('.'.join(__name__.split('.')[1:]))
 
 
 class KissMangaCrawler(BaseCrawler):

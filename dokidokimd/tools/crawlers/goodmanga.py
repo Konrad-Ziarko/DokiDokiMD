@@ -3,12 +3,12 @@ from urllib.parse import urljoin
 import requests
 from lxml import html
 
-from dokidokimd.manga_site import Manga, Chapter, available_sites, MangaSite
-from dokidokimd.tools.kz_logger import KzLogger
-from dokidokimd.tools.crawlers.base_crawler import BaseCrawler
-from dokidokimd.tools.translator import translate as _
+from manga_site import Manga, Chapter, available_sites, MangaSite
+from tools.kz_logger import get_logger
+from tools.crawlers.base_crawler import BaseCrawler
+from tools.translator import translate as _
 
-module_logger = KzLogger().get_logger('crawlers.goodmanga')
+logger = get_logger('.'.join(__name__.split('.')[1:]))
 
 
 class GoodMangaCrawler(BaseCrawler):
@@ -33,7 +33,8 @@ class GoodMangaCrawler(BaseCrawler):
 
                 manga_site.add_manga(manga)
         else:
-            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+            raise ConnectionError(
+                _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def crawl_detail(self, manga: Manga) -> None:
         start_url = manga.url
@@ -56,7 +57,8 @@ class GoodMangaCrawler(BaseCrawler):
             # chapters are in descending order so
             manga.chapters.reverse()
         else:
-            raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+            raise ConnectionError(
+                _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def download(self, chapter: Chapter) -> None:
         # FIXME 1: split single page chapters
@@ -84,4 +86,5 @@ class GoodMangaCrawler(BaseCrawler):
                     # next button navigates to next chapter
                     retrieved_all_pages = True
             else:
-                raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+                raise ConnectionError(
+                    _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))

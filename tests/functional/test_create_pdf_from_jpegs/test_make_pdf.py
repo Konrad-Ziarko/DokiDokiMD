@@ -1,6 +1,6 @@
 from os.path import dirname, join, isfile, getsize
 
-from dokidokimd.convert.make_pdf import PDF
+from tools.make_pdf import PDF
 
 
 def test_make_pdf():

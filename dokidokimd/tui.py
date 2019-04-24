@@ -4,11 +4,11 @@ import sys
 
 import urwid
 
-from dokidokimd.controller import DDMDController
-from dokidokimd.tools.kz_logger import KzLogger
-from dokidokimd.tools.translator import translate as _
+from controller import DDMDController
+from tools.kz_logger import get_logger
+from tools.translator import translate as _
 
-module_logger = KzLogger().get_logger('tui')
+logger = get_logger('.'.join(__name__.split('.')[1:]))
 
 
 def exit_program(key):
@@ -468,7 +468,6 @@ def main():
         cmd = 'start cmd /K {python} {path}'
 
     if sys.__stdin__.isatty():  # stdin.isatty():
-        logger = KzLogger('ddmd')
         w = Window(DDMDController())
         w.start()
     else:

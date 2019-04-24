@@ -2,10 +2,10 @@ import pickle
 import re
 from typing import List
 
-from dokidokimd.tools.kz_logger import KzLogger
-from dokidokimd.tools.translator import translate as _
+from tools.kz_logger import get_logger
+from tools.translator import translate as _
 
-module_logger = KzLogger().get_logger('manga_site')
+logger = get_logger('.'.join(__name__.split('.')[1:]))
 
 path_safe_regex = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
 path_safe_replace_char = r'_'
@@ -85,7 +85,6 @@ class Manga:
             self.chapters.append(chapter)
         elif chapter.url not in [x.url for x in self.chapters if x.url == chapter.url]:
             self.chapters.append(chapter)
-        module_logger.debug(_('Added [{}] chapter {} to manga {}.').format(len(self.chapters), chapter.title, self.title))
 
     def dump(self):
         return pickle.dumps(self)
@@ -114,10 +113,9 @@ class MangaSite:
             self.mangas.append(manga)
         elif manga.url not in [x.url for x in self.mangas if x.url == manga.url]:
             self.mangas.append(manga)
-        module_logger.debug(_('Added [{}] manga {} to site {}.').format(len(self.mangas), manga.title, self.site_name))
 
     def dump(self):
-        module_logger.debug(_('Dumped {} site with {} mangas.').format(self.site_name, len(self.mangas)))
+        logger.debug(_('Dumped {} site with {} mangas.').format(self.site_name, len(self.mangas)))
         return pickle.dumps(self)
 
     def __getstate__(self):

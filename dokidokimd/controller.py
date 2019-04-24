@@ -5,14 +5,14 @@ from os.path import join, isdir, isfile
 from sys import platform
 from typing import List, Dict, Tuple, Union
 
-from dokidokimd.tools.make_pdf import PDF
-from dokidokimd.manga_site import load_dumped_site, MangaSite, Chapter, Manga
-from dokidokimd.tools.kz_logger import KzLogger
-from dokidokimd.tools.crawlers.base_crawler import BaseCrawler
-from dokidokimd.tools.crawlers.goodmanga import GoodMangaCrawler
-from dokidokimd.tools.crawlers.kissmanga import KissMangaCrawler
-from dokidokimd.tools.crawlers.mangapanda import MangaPandaCrawler
-from dokidokimd.tools.translator import translate as _
+from tools.make_pdf import PDF
+from manga_site import load_dumped_site, MangaSite, Chapter, Manga
+from tools.kz_logger import get_logger
+from tools.crawlers.base_crawler import BaseCrawler
+from tools.crawlers.goodmanga import GoodMangaCrawler
+from tools.crawlers.kissmanga import KissMangaCrawler
+from tools.crawlers.mangapanda import MangaPandaCrawler
+from tools.translator import translate as _
 
 if platform == 'linux' or platform == 'linux2':
     pass
@@ -21,7 +21,7 @@ elif platform == 'darwin':
 elif platform == 'win32':
     pass
 
-module_logger = KzLogger().get_logger('controller')
+logger = get_logger('.'.join(__name__.split('.')[1:]))
 
 MangaCrawlers = {
     'GoodManga': GoodMangaCrawler,
@@ -76,8 +76,20 @@ class DDMDController:
                 self.crawlers[site_name] = crawler
                 return crawler
             else:
-                module_logger.error(_('Could not get {} crawlers').format(site_name))
+                logger.error(_('Could not get {} crawlers').format(site_name))
                 return False
+
+    def set_cwd_site(self, site_index: int):
+        self.cwd_site = site_index
+        self.cwd_manga = self.cwd_chapter = self.cwd_page = -1
+
+    def set_cwd_manga(self, manga_index: int):
+        self.cwd_manga = manga_index
+        self.cwd_chapter = self.cwd_page = -1
+
+    def set_cwd_chapter(self, chapter_index: int):
+        self.cwd_chapter = chapter_index
+        self.cwd_page = -1
 
     def cwd_up(self):
         pass
@@ -104,7 +116,7 @@ class DDMDController:
                         if self.cwd_page >= 0:
                             cwd += '/{}'.format(self.cwd_page)
         except Exception as e:
-            module_logger.error(_('Could not build path for site_number={}, manga_number={}, chapter_number={}, page={}.\n'
+            logger.error(_('Could not build path for site_number={}, manga_number={}, chapter_number={}, page={}.\n'
                                   'Exception message: {}').format(self.cwd_site, self.cwd_manga, self.cwd_chapter, self.cwd_page, e))
             self._reset_cwd()
         return cwd
@@ -132,6 +144,9 @@ class DDMDController:
             i = i + 1
         return output
 
+    def get_current_site(self):
+        return self.manga_sites[self.cwd_site]
+
     def get_sites(self) -> List[Tuple[int, str]]:
         return [(idx, site.site_name) for idx, site in enumerate(self.manga_sites)]
 
@@ -146,6 +161,9 @@ class DDMDController:
                 delimiter, i, manga.title, len(manga.chapters) if manga.chapters is not None else 0))
             i = i + 1
         return output
+
+    def get_current_manga(self):
+        return self.get_current_site().mangas[self.cwd_manga]
 
     def get_mangas(self, ) -> List[Tuple[int, str]]:
         return [(idx, manga.title) for idx, manga in enumerate(self.manga_sites[self.cwd_site].mangas)]
@@ -215,7 +233,7 @@ class DDMDController:
             self.pdf_converter.clear_pages()
             chapter.converted = True
         except Exception as e:
-            module_logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
+            logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
             return False, pdf_dir
         return True, pdf_dir
 
@@ -231,11 +249,11 @@ class DDMDController:
                     if isfile(file_path):
                         unlink(file_path)
                 except Exception as e:
-                    module_logger.error(_('Could not remove image {}\nError message: {}').format(file_path, e))
+                    logger.error(_('Could not remove image {}\nError message: {}').format(file_path, e))
             rmdir(images_dir)
             chapter.pages = list()
         except Exception as e:
-            module_logger.error(_('Could not remove images from {}\nError message: {}').format(images_dir, e))
+            logger.error(_('Could not remove images from {}\nError message: {}').format(images_dir, e))
             return False, images_dir
         return True, images_dir
 
@@ -252,7 +270,7 @@ class DDMDController:
                 with open(path, 'wb') as f:
                     f.write(page)
         except Exception as e:
-            module_logger.error(_('Could not save images to {}\nError message: {}').format(images_dir, e))
+            logger.error(_('Could not save images to {}\nError message: {}').format(images_dir, e))
             return False, images_dir
         return True, images_dir
 
@@ -261,7 +279,7 @@ class DDMDController:
             if not isdir(self.save_location_sites):
                 makedirs(self.save_location_sites, exist_ok=True)
         except Exception as e:
-            module_logger.critical(_('Could not make or access directory {}\nError message: {}').format(
+            logger.critical(_('Could not make or access directory {}\nError message: {}').format(
                 self.save_location_sites, e))
             return False
 
@@ -282,32 +300,32 @@ class DDMDController:
                     with open(path_to_file, 'wb') as the_file:
                         the_file.write(data)
                 except Exception as e:
-                    module_logger.critical(_('Could not save {} site to a file{}\nError message: {}').format(
+                    logger.critical(_('Could not save {} site to a file{}\nError message: {}').format(
                         manga_site.site_name, path_to_file, e))
                     pass
             else:
                 with open(path_to_file, 'wb') as the_file:
                     the_file.write(data)
-        module_logger.info(_('Data saved to DB'))
+        logger.info(_('Data saved to DB'))
         return True
 
     def load_sites(self) -> bool:
         self.manga_sites = []
         if not isdir(self.save_location_sites):
             makedirs(self.save_location_sites, exist_ok=True)
-            module_logger.info(_('No saved state. Creating dir for fresh DB'))
+            logger.info(_('No saved state. Creating dir for fresh DB'))
             return False
         for file_name in listdir(self.save_location_sites):
             if not file_name.endswith('.old'):
                 if isfile(join(self.save_location_sites, file_name)):
-                    module_logger.info(_('Trying to load last state for {}').format(file_name))
+                    logger.info(_('Loading last state for {}').format(file_name))
                     try:
                         with open(join(self.save_location_sites, file_name), 'rb') as the_file:
                             data = the_file.read()
                             manga_site = load_dumped_site(data)
                             self.manga_sites.append(manga_site)
                     except Exception as e1:
-                        module_logger.warning(_(
+                        logger.warning(_(
                             'Could not load last state, trying older one. Error message: {}').format(e1))
                         try:
                             with open('{}.old'.format(join(self.save_location_sites, file_name)), 'rb') as the_file:
@@ -315,7 +333,7 @@ class DDMDController:
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)
                         except Exception as e2:
-                            module_logger.warning(_(
+                            logger.warning(_(
                                 'Could not load old last state either. Error message: {}').format(e2))
 
 

@@ -4,9 +4,9 @@ from enum import Enum
 
 from PIL import Image
 
-from dokidokimd.tools.kz_logger import KzLogger
+from tools.kz_logger import get_logger
 
-module_logger = KzLogger().get_logger('image_coder')
+logger = get_logger('.'.join(__name__.split('.')[1:]))
 
 
 class ImageFormat(Enum):
