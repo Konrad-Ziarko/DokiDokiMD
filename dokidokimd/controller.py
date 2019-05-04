@@ -9,7 +9,7 @@ from tools.make_pdf import PDF
 from manga_site import load_dumped_site, MangaSite, Chapter, Manga
 from tools.kz_logger import get_logger
 from tools.crawlers.base_crawler import BaseCrawler
-from tools.crawlers.goodmanga import GoodMangaCrawler
+from tools.crawlers.mangareader import MangareaderCrawler
 from tools.crawlers.kissmanga import KissMangaCrawler
 from tools.crawlers.mangapanda import MangaPandaCrawler
 from tools.translator import translate as _
@@ -21,10 +21,10 @@ elif platform == 'darwin':
 elif platform == 'win32':
     pass
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
+logger = get_logger(__name__)
 
 MangaCrawlers = {
-    'GoodManga': GoodMangaCrawler,
+    'Mangareader': MangareaderCrawler,
     'MangaPanda': MangaPandaCrawler,
     'KissManga': KissMangaCrawler,
 }
@@ -43,9 +43,9 @@ def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
 
 class DDMDController:
     def __init__(self) -> None:
-        self.cwd_site = -1                                          # type: int
-        self.cwd_manga = -1                                         # type: int
-        self.cwd_chapter = -1                                       # type: int
+        self.cwd_site = None                                        # type: MangaSite
+        self.cwd_manga = None                                       # type: Manga
+        self.cwd_chapter = None                                     # type: Chapter
         self.cwd_page = -1                                          # type: int
 
         self.working_dir = getcwd()                                 # type: str
@@ -55,12 +55,14 @@ class DDMDController:
         self.pdf_converter = PDF()                                  # type: PDF
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
         self.load_sites()
-        if len(self.manga_sites) == 0:
+        if len(self.manga_sites) == 0 or len(self.manga_sites) != len(MangaCrawlers.items()):
+            current_sites = [site.site_name for site in self.manga_sites]
             for site, crawler in MangaCrawlers.items():
-                self.manga_sites.append(MangaSite(site))
+                if site not in current_sites:
+                    self.manga_sites.append(MangaSite(site))
 
     def _reset_cwd(self):
-        self.cwd_chapter = self.cwd_manga = self.cwd_site = self.cwd_page = -1
+        self.cwd_chapter = self.cwd_manga = self.cwd_site = self.cwd_page = None
 
     def __get_crawler(self, site_name: str) -> Union[BaseCrawler, bool]:
         """
@@ -79,23 +81,17 @@ class DDMDController:
                 logger.error(_('Could not get {} crawlers').format(site_name))
                 return False
 
-    def set_cwd_site(self, site_index: int):
-        self.cwd_site = site_index
-        self.cwd_manga = self.cwd_chapter = self.cwd_page = -1
+    def set_cwd_site(self, site: MangaSite):
+        self.cwd_site = site
+        self.cwd_manga = self.cwd_chapter = self.cwd_page = None
 
-    def set_cwd_manga(self, manga_index: int):
-        self.cwd_manga = manga_index
-        self.cwd_chapter = self.cwd_page = -1
+    def set_cwd_manga(self, manga: Manga):
+        self.cwd_manga = manga
+        self.cwd_chapter = self.cwd_page = None
 
-    def set_cwd_chapter(self, chapter_index: int):
-        self.cwd_chapter = chapter_index
-        self.cwd_page = -1
-
-    def cwd_up(self):
-        pass
-
-    def cwd_down(self, index):
-        pass
+    def set_cwd_chapter(self, chapter: Chapter):
+        self.cwd_chapter = chapter
+        self.cwd_page = None
 
     def get_cwd_string(self) -> str:
         """
@@ -104,36 +100,22 @@ class DDMDController:
         """
         cwd = '/'
         try:
-            if self.cwd_site >= 0:
-                tmp = self.manga_sites[self.cwd_site]
+            if self.cwd_site:
+                tmp = self.cwd_site
                 cwd += '{}'.format(tmp.site_name)
-                if self.cwd_manga >= 0:
+                if self.cwd_manga:
                     tmp = tmp.mangas[self.cwd_manga]
                     cwd += '/{}'.format(tmp.title)
-                    if self.cwd_chapter >= 0:
+                    if self.cwd_chapter:
                         tmp = tmp.chapters[self.cwd_chapter]
                         cwd += '/{}'.format(tmp.title)
-                        if self.cwd_page >= 0:
+                        if self.cwd_page:
                             cwd += '/{}'.format(self.cwd_page)
         except Exception as e:
             logger.error(_('Could not build path for site_number={}, manga_number={}, chapter_number={}, page={}.\n'
                                   'Exception message: {}').format(self.cwd_site, self.cwd_manga, self.cwd_chapter, self.cwd_page, e))
             self._reset_cwd()
         return cwd
-
-    def is_valid_path(self) -> bool:
-        try:
-            if self.cwd_site >= 0:
-                tmp = self.manga_sites[self.cwd_site]
-                if self.cwd_manga >= 0:
-                    tmp = tmp.mangas[self.cwd_manga]
-                    if self.cwd_chapter >= 0:
-                        tmp = tmp.chapters[self.cwd_chapter]
-                        if self.cwd_page >= 0:
-                            if tmp.pages[self.cwd_page]:
-                                return True
-        except IndexError:
-            return False
 
     def list_sites(self, delimiter: str = '\t') -> str:
         i = 0
@@ -145,14 +127,14 @@ class DDMDController:
         return output
 
     def get_current_site(self):
-        return self.manga_sites[self.cwd_site]
+        return self.cwd_site
 
-    def get_sites(self) -> List[Tuple[int, str]]:
-        return [(idx, site.site_name) for idx, site in enumerate(self.manga_sites)]
+    def get_sites(self) -> List[MangaSite]:
+        return [site for site in self.manga_sites]
 
     def list_mangas(self, delimiter: str = '\t') -> str:
         i = 0
-        site = self.manga_sites[self.cwd_site]
+        site = self.cwd_site
         if site.mangas is None:
             site.mangas = list()
         output = (_('Site {} contains {} mangas:').format(site.site_name, len(site.mangas)))
@@ -163,14 +145,14 @@ class DDMDController:
         return output
 
     def get_current_manga(self):
-        return self.get_current_site().mangas[self.cwd_manga]
+        return self.cwd_manga
 
     def get_mangas(self, ) -> List[Tuple[int, str]]:
-        return [(idx, manga.title) for idx, manga in enumerate(self.manga_sites[self.cwd_site].mangas)]
+        return [(idx, manga.title) for idx, manga in enumerate(self.cwd_site.mangas)]
 
     def list_chapters(self, delimiter: str = '\t') -> str:
         i = 0
-        manga = self.manga_sites[self.cwd_site].mangas[self.cwd_manga]
+        manga = self.cwd_manga
         if manga.chapters is None:
             manga.chapters = list()
         output = (_('Manga {} contains {} chapters:').format(manga.title, len(manga.chapters)))
@@ -182,7 +164,7 @@ class DDMDController:
         return output
 
     def get_chapters(self) -> List[Tuple[int, str]]:
-        return [(idx, chapter.title) for idx, chapter in enumerate(self.manga_sites[self.cwd_site].mangas[self.cwd_manga].chapters)]
+        return [(idx, chapter.title) for idx, chapter in enumerate(self.cwd_manga.chapters)]
 
     def list_pages(self, delimiter: str = '\t'):
         raise NotImplementedError
@@ -196,15 +178,15 @@ class DDMDController:
         return False, site_name
 
     def crawl_site(self) -> MangaSite:
-        site = self.manga_sites[self.cwd_site]
+        site = self.cwd_site
         crawler = self.__get_crawler(site.site_name)
         if crawler:
             crawler.crawl_index(site)
             return site
 
     def crawl_manga(self) -> Manga:
-        site = self.manga_sites[self.cwd_site]
-        manga = site.mangas[self.cwd_manga]
+        site = self.cwd_site
+        manga = self.cwd_manga
         crawler = self.__get_crawler(site.site_name)
         if crawler:
             crawler.crawl_detail(manga)
@@ -212,8 +194,8 @@ class DDMDController:
             return manga
 
     def crawl_chapter(self) -> Chapter:
-        site = self.manga_sites[self.cwd_site]
-        chapter = site.mangas[self.cwd_manga].chapters[self.cwd_chapter]
+        site = self.cwd_site
+        chapter = self.cwd_chapter
         crawler = self.__get_crawler(site.site_name)
         if crawler:
             crawler.download(chapter)

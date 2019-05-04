@@ -2,54 +2,47 @@ import atexit
 import sys
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPainter, QIcon, QColor
+from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QMainWindow, QHBoxLayout, \
-    QComboBox, QListWidget, QMessageBox, QAction, QMenu, QAbstractButton, QListWidgetItem
+    QComboBox, QListWidget, QMessageBox, QAction, QMenu, QListWidgetItem, QLineEdit
 
 from controller import DDMDController
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
-
-
-class ImageButton(QAbstractButton):
-    def __init__(self, pixmap, parent=None):
-        super(ImageButton, self).__init__(parent)
-        self.bitmap = pixmap
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.drawPixmap(event.rect(), self.bitmap)
-
-    def sizeHint(self):
-        return self.bitmap.size()
-
+logger = get_logger(__name__)
 
 class MangaSiteWidget(QWidget):
     def __init__(self, parent, controller):
         super(QWidget, self).__init__(parent)
         self.ddmd = controller
+        self.filter_text = ''
 
         hbox = QHBoxLayout(self)
         vbox_left = QVBoxLayout(self)
         hbox.addLayout(vbox_left)
         vbox_right = QVBoxLayout(self)
         search_hbox = QHBoxLayout()
-        combo_box_sites = QComboBox()
+        self.combo_box_sites = QComboBox()
         self.mangas_list = QListWidget()
         self.chapters_list = QListWidget()
+        self.filter_mangas = QLineEdit()
         hbox.addLayout(vbox_right)
 
-        combo_box_sites.currentIndexChanged.connect(
-            lambda: self.site_selected(combo_box_sites.currentIndex())
+        self.combo_box_sites.currentIndexChanged.connect(
+            lambda: self.site_selected(self.combo_box_sites.currentIndex())
         )
-        combo_box_sites.addItems(
-            ['{}:{}'.format(key[0], key[1]) for key in self.ddmd.get_sites()]
-        )
-        combo_box_sites.setMaximumWidth(combo_box_sites.sizeHint().width())
+        for idx, site in enumerate(self.ddmd.get_sites()):
+            #item = QListWidgetItem('{}:{}({})'.format(idx, site.site_name, len(site.mangas)))
+            #item.setData(QtCore.Qt.UserRole, site)
+            self.combo_box_sites.addItem('{}:{}({})'.format(idx, site.site_name, len(site.mangas)), site)
+
+        # self.combo_box_sites.addItems(
+        #     ['{}:{}({})'.format(key[0], key[1], key[2]) for key in self.ddmd.get_sites()]
+        # )
+        self.combo_box_sites.setMaximumWidth(self.combo_box_sites.sizeHint().width())
         vbox_left.addLayout(search_hbox)
-        search_hbox.addWidget(combo_box_sites)
+        search_hbox.addWidget(self.combo_box_sites)
         # get mangas for site from drop down
         btn_crawl_site = QPushButton(parent=self)
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
@@ -70,6 +63,10 @@ class MangaSiteWidget(QWidget):
         #self.load_stored_mangas(combo_box_sites.currentIndex())
         vbox_left.addWidget(self.mangas_list)
 
+        self.filter_mangas.setToolTip('Filter')
+        self.filter_mangas.setPlaceholderText('Search manga:')
+        self.filter_mangas.textChanged.connect(lambda: self.apply_filter(self.filter_mangas.text()))
+        vbox_left.addWidget(self.filter_mangas)
         ##
         # self.chapters_list.doubleClicked.connect(
         #     lambda: pass
@@ -82,12 +79,15 @@ class MangaSiteWidget(QWidget):
         self.update_chapters()
 
     def manga_selected(self, manga_index):
-        self.ddmd.set_cwd_manga(manga_index)
+        manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
+        self.ddmd.set_cwd_manga(manga)
         self.load_stored_chapters()
 
     def site_selected(self, site_index):
-        self.ddmd.set_cwd_site(site_index)
+        site = self.combo_box_sites.itemData(site_index, QtCore.Qt.UserRole)
+        self.ddmd.set_cwd_site(site)
         self.load_stored_mangas()
+        self.chapters_list.clear()
 
     def load_stored_chapters(self, manga=None):
         if not manga:
@@ -108,11 +108,13 @@ class MangaSiteWidget(QWidget):
             site = self.ddmd.get_current_site()
         self.mangas_list.clear()
         for manga in site.mangas:
-            item = QListWidgetItem(manga.title)
-            if manga.downloaded:
-                item.setForeground(QColor(23, 150, 200, 250))
-            item.setToolTip(manga.title)
-            self.mangas_list.addItem(item)
+            if self.filter_text.lower() in manga.title.lower():
+                item = QListWidgetItem(manga.title)
+                if manga.downloaded:
+                    item.setForeground(QColor(23, 150, 200, 250))
+                item.setToolTip(manga.title)
+                item.setData(QtCore.Qt.UserRole, manga)
+                self.mangas_list.addItem(item)
         self.mangas_list.setMinimumWidth(self.mangas_list.sizeHint().width())
         self.mangas_list.setMaximumWidth(self.mangas_list.sizeHintForColumn(0))
 
@@ -135,6 +137,10 @@ class MangaSiteWidget(QWidget):
             logger.warning(_('Could not refresh site, reason: {}').format(e))
         finally:
             self.parent().setEnabled(True)
+
+    def apply_filter(self, text):
+        self.filter_text = text
+        self.load_stored_mangas()
 
 
 class GUI(QMainWindow):

@@ -5,14 +5,14 @@ from typing import List
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
+logger = get_logger(__name__)
 
 path_safe_regex = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
 path_safe_replace_char = r'_'
 compiled_regex = re.compile(path_safe_regex, re.UNICODE)
 
 available_sites = {
-    'GoodManga': 'http://www.goodmanga.net/',
+    'Mangareader': 'https://www.mangareader.net',
     'MangaPanda': 'https://www.mangapanda.com/',
     'KissManga': 'http://kissmanga.com/',
 }

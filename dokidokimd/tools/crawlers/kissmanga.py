@@ -8,7 +8,7 @@ from tools.kz_logger import get_logger
 from tools.crawlers.base_crawler import BaseCrawler
 from tools.translator import translate as _
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
+logger = get_logger(__name__)
 
 
 class KissMangaCrawler(BaseCrawler):

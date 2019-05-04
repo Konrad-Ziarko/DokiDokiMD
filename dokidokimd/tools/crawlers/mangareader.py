@@ -8,28 +8,27 @@ from tools.kz_logger import get_logger
 from tools.crawlers.base_crawler import BaseCrawler
 from tools.translator import translate as _
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
+logger = get_logger(__name__)
 
 
-class GoodMangaCrawler(BaseCrawler):
+class MangareaderCrawler(BaseCrawler):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.base_url = available_sites['GoodManga']  # type: str
+        self.base_url = available_sites['Mangareader']  # type: str
 
     def crawl_index(self, manga_site: MangaSite) -> None:
-        start_url = urljoin(self.base_url, '/manga-list')
+        start_url = urljoin(self.base_url, '/alphabetical')
 
         response = requests.get(start_url)
         if response.status_code == 200:
             manga_site.url = self.base_url
 
             tree = html.fromstring(response.content)
-
-            for element in tree.xpath('//*[@id="content"]/table/tr/td/a'):
+            for element in tree.xpath('//*[@id="wrapper_body"]/div/div/div/ul/li/a'):
                 manga = Manga()
                 manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                manga.url = str(element.xpath('@href')[0])
+                manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                 manga_site.add_manga(manga)
         else:
@@ -37,17 +36,17 @@ class GoodMangaCrawler(BaseCrawler):
                 _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
     def crawl_detail(self, manga: Manga) -> None:
-        start_url = manga.url
+        start_url = urljoin(self.base_url, manga.url)
 
         response = requests.get(start_url)
         if response.status_code == 200:
             tree = html.fromstring(response.content)
 
             # crawl for manga chapters
-            for element in tree.xpath('//*[@id="chapters"]/ul/li/a'):
+            for element in tree.xpath('//*[@id="listing"]/tr/td[1]/a'):
                 chapter = Chapter()
                 chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                chapter.url = str(element.xpath('@href')[0])
+                chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                 manga.add_chapter(chapter)
 
@@ -55,7 +54,7 @@ class GoodMangaCrawler(BaseCrawler):
             # https://api.jikan.moe/
 
             # chapters are in descending order so
-            manga.chapters.reverse()
+            # manga.chapters.reverse()
         else:
             raise ConnectionError(
                 _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
@@ -71,14 +70,11 @@ class GoodMangaCrawler(BaseCrawler):
             response = requests.get(url)
             if response.status_code == 200:
                 tree = html.fromstring(response.content)
-                image_src = str(tree.xpath('//*[@id="manga_viewer"]/a/img/@src')[0])
+                image_src = str(tree.xpath('//*[@id="img"]/@src')[0])
                 image = requests.get(image_src, stream=True).content
                 chapter.pages.append(image)
 
-                try:
-                    nav_next = str(tree.xpath('//*[@id="manga_nav_top"]/span/a[2]/@href')[0])
-                except IndexError:
-                    nav_next = str(tree.xpath('//*[@id="manga_nav_top"]/span/a/@href')[0])
+                nav_next = str(tree.xpath('//*[@id="navi"]/div[1]/span[2]/a/@href')[0])
                 if start_url in nav_next:
                     # next button navigates to next page of a chapter
                     url = nav_next

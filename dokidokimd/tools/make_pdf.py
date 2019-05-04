@@ -11,7 +11,7 @@ from manga_site import Chapter
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
+logger = get_logger(__name__)
 
 
 class PDF:

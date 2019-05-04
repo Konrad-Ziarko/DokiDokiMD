@@ -6,7 +6,7 @@ from PIL import Image
 
 from tools.kz_logger import get_logger
 
-logger = get_logger('.'.join(__name__.split('.')[1:]))
+logger = get_logger(__name__)
 
 
 class ImageFormat(Enum):
