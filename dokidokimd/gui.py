@@ -109,7 +109,7 @@ class ListWidget(QListWidget):
 
 class MangaSiteWidget(QWidget):
     def __init__(self, parent, controller):
-        super(QWidget, self).__init__(parent)
+        super(MangaSiteWidget, self).__init__(parent)
         self.ddmd = controller
         self.filter_text = ''
         self.download_threads = dict()
@@ -305,7 +305,7 @@ class MangaSiteWidget(QWidget):
 
 class GUI(QMainWindow):
     def __init__(self, qt_app, title):
-        super(QMainWindow, self).__init__()
+        super(GUI, self).__init__()
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
         self.controller = DDMDController()
