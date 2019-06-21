@@ -79,6 +79,9 @@ class DownloadThread(QThread):
         self.callable_fun = callable_fun
         self.threads = list()
 
+    def set_name(self, string):
+        self.name = string
+
     def run(self):
         for chapter in self.chapters:
             t = SingleChapterDownloadThread(self.ddmd, chapter)
@@ -88,7 +91,7 @@ class DownloadThread(QThread):
 
         while any(t.isRunning() for t in self.threads):
             pass
-        self.signal.emit("Download completed")
+        self.signal.emit(self.name)
 
 
 class ListWidget(QListWidget):
@@ -109,6 +112,7 @@ class MangaSiteWidget(QWidget):
         super(QWidget, self).__init__(parent)
         self.ddmd = controller
         self.filter_text = ''
+        self.download_threads = dict()
 
         hbox = QHBoxLayout(self)
         vbox_left = QVBoxLayout(self)
@@ -170,23 +174,33 @@ class MangaSiteWidget(QWidget):
         for i in indexes:
             self.chapters_list.item(i).setSelected(True)
 
-    def download_finished(self, string):
+    def single_download_finished(self, string):
         self.parent().show_msg_on_status_bar(string)
+        self.repaint_chapters()
+
+    def download_finished(self, name):
+        self.download_threads.pop(name)
+        self.parent().show_msg_on_status_bar(_("Download finished"))
         self.repaint_chapters()
 
     def chapter_list_item_right_clicked(self, QPos):
         list_menu = QtWidgets.QMenu()
         clear_action = QAction(_('Clear item'), self)
         clear_action.triggered.connect(self.chapter_clear_clicked)
-        menu_item_clear = list_menu.addAction(clear_action)  # This should clear chapter info and downloaded flag
+        menu_item_clear = list_menu.addAction(clear_action)
+
         list_menu.addSeparator()
+
         download_action = QAction(_('Download'), self)
         download_action.triggered.connect(self.chapter_download_clicked)
         menu_item_download = list_menu.addAction(download_action)
 
-        # FIXME allow(show option) pdf only if downloaded
-        menu_item_make_pdf = list_menu.addAction(_('Save as PDF'))
+        convert_action = QAction(_('Save as PDF'), self)
+        convert_action.triggered.connect(self.chapter_convert_clicked)
+        menu_item_make_pdf = list_menu.addAction(convert_action)
 
+        list_menu.addSeparator()
+        # TODO mark_as_downloaded mark_as_converted remove_from_disk
         list_menu.exec_(QCursor.pos())
 
     def chapter_clear_clicked(self):
@@ -197,13 +211,19 @@ class MangaSiteWidget(QWidget):
             chapter.pages = []
         self.repaint_chapters()
 
+    def chapter_convert_clicked(self):
+        # TODO
+        raise NotImplementedError
+
     def chapter_download_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
         ch = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
         self.parent().show_msg_on_status_bar(_("Downloading chapters..."))
-        self.download_thread = DownloadThread(self.ddmd, self.download_finished, ch)
-        self.download_thread.signal.connect(self.download_finished)
-        self.download_thread.start()
+        t = DownloadThread(self.ddmd, self.single_download_finished, ch)
+        self.download_threads[str(t)] = t
+        self.download_threads[str(t)].set_name(str(t))
+        self.download_threads[str(t)].signal.connect(self.download_finished)
+        self.download_threads[str(t)].start()
 
     def chapter_double_clicked(self, chapter_index):
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
