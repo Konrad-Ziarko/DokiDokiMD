@@ -2,17 +2,20 @@ import atexit
 import configparser
 import sys
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon, QColor, QPaintEvent, QPainter, QCursor, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QMainWindow, QHBoxLayout, \
-    QComboBox, QListWidget, QMessageBox, QAction, QMenu, QListWidgetItem, QLineEdit, QLabel
+    QComboBox, QListWidget, QMessageBox, QAction, QMenu, QListWidgetItem, QLineEdit
 
 from controller import DDMDController
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
 
 logger = get_logger(__name__)
+
+DOWNLOADED_COLOR = 23, 150, 200, 250
+CONVERTER_COLOR = 11, 120, 10, 250
 
 
 class ConfigManager(object):
@@ -50,6 +53,21 @@ class ConfigManager(object):
     def write_config(self):
         with open('conf.ini', 'w') as configfile:
             self.config.write(configfile)
+
+
+class DownloadThread(QThread):
+    signal = pyqtSignal('PyQt_PyObject')
+
+    def __init__(self, ddmd, chapters):
+        QThread.__init__(self)
+        self.ddmd = ddmd
+        self.chapters = chapters
+
+    def run(self):
+        for chapter in self.chapters:
+            self.ddmd.crawl_chapter(chapter)
+            self.ddmd.save_images_from_chapter(chapter)
+        self.signal.emit(True)
 
 
 class ListWidget(QListWidget):
@@ -116,30 +134,49 @@ class MangaSiteWidget(QWidget):
         vbox_left.addWidget(self.filter_mangas)
 
         ##
-        # self.chapters_list.doubleClicked.connect(
-        #     lambda: self.chapters_list.selectedItems()
-        # )
+        self.chapters_list.doubleClicked.connect(
+            lambda: self.chapter_double_clicked(self.chapters_list.currentRow())
+        )
         self.chapters_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         hbox.addWidget(self.chapters_list)
         self.chapters_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.chapters_list.customContextMenuRequested.connect(self.list_item_right_clicked)
+        self.chapters_list.customContextMenuRequested.connect(self.chapter_list_item_right_clicked)
         self.setLayout(hbox)
 
-    def list_item_right_clicked(self, QPos):
+    def chapter_list_item_right_clicked(self, QPos):
         list_menu = QtWidgets.QMenu()
-        menu_item_remove = list_menu.addAction(_('Remove Item'))
+        menu_item_remove = list_menu.addAction(_('Remove Item'))  # This should clear chapter info and downloaded flag
         list_menu.addSeparator()
-        # menu_item_remove.triggered.connect(self._configure)
-        menu_item_download = list_menu.addAction(_('Download'))
-        menu_item_make_pdf = list_menu.addAction(_('Make PDF'))
+        download_action = QAction(_('Download'), self)
+        download_action.triggered.connect(self.chapter_download_clicked)
+        menu_item_download = list_menu.addAction(download_action)
+
+        # FIXME allow(show option) pdf only if downloaded
+        menu_item_make_pdf = list_menu.addAction(_('Save as PDF'))
 
         list_menu.exec_(QCursor.pos())
+
+    def chapter_download_clicked(self):
+        selected_chapters = self.chapters_list.selectedItems()
+        ch = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+        self.download_thread = DownloadThread(self.ddmd, ch)
+        self.download_thread.signal.connect(self.download_thread_finished)
+        self.download_thread.start()
+
+    def download_thread_finished(self, result):
+        self.parent().show_msg_on_status_bar("Done")
+        self.load_stored_chapters(self.ddmd.get_current_manga())
+
+    def chapter_double_clicked(self, chapter_index):
+        chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
+        self.ddmd.set_cwd_chapter(chapter)
+        # FIXME double click should open chapter info ?
 
     def manga_double_clicked(self, manga_index):
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_manga(manga)
         self.update_chapters()
-        self.mangas_list.item(manga_index).setForeground(QColor(23, 150, 200, 250))
+        self.mangas_list.item(manga_index).setForeground(QColor(*DOWNLOADED_COLOR))
 
     def manga_selected(self, manga_index):
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
@@ -159,10 +196,11 @@ class MangaSiteWidget(QWidget):
         for chapter in manga.chapters:
             item = QListWidgetItem(chapter.title)
             if chapter.downloaded:
-                item.setForeground(QColor(23, 150, 200, 250))
+                item.setForeground(QColor(*DOWNLOADED_COLOR))
             if chapter.converted:
-                item.setForeground(QColor(11, 120, 10, 250))
+                item.setForeground(QColor(*CONVERTER_COLOR))
             item.setToolTip(chapter.title)
+            item.setData(QtCore.Qt.UserRole, chapter)
             self.chapters_list.addItem(item)
         self.chapters_list.setMinimumWidth(self.chapters_list.sizeHint().width())
 
@@ -174,7 +212,7 @@ class MangaSiteWidget(QWidget):
             if self.filter_text.lower() in manga.title.lower():
                 item = QListWidgetItem(manga.title)
                 if manga.downloaded:
-                    item.setForeground(QColor(23, 150, 200, 250))
+                    item.setForeground(QColor(*DOWNLOADED_COLOR))
                 item.setToolTip(manga.title)
                 item.setData(QtCore.Qt.UserRole, manga)
                 self.mangas_list.addItem(item)
@@ -223,6 +261,7 @@ class GUI(QMainWindow):
         self.init_menu_bar()
         self.change_sot(self.config.sot)
         self.set_dark_style(self.config.dark_mode)
+        self.keep_status_msg = 0
         self.show()
 
     def init_menu_bar(self):
@@ -264,6 +303,7 @@ class GUI(QMainWindow):
             p.setColor(QPalette.Base, QColor(33, 33, 33))
             p.setColor(QPalette.Text, QColor(255, 255, 255))
             p.setColor(QPalette.PlaceholderText, QColor(255, 255, 255))
+            p.setColor(QPalette.Foreground, QColor(255, 255, 255))
             self.qt_app.setPalette(p)
         else:
             self.qt_app.setPalette(self.original_palette)
@@ -284,6 +324,9 @@ class GUI(QMainWindow):
 
     def show_msg_on_status_bar(self, string: str = ''):
         self.statusBar().showMessage(string)
+
+    def clear_status_bar(self):
+        self.statusBar().clearMessage()
 
     def show_msg_window(self, title, msg):
         QMessageBox.question(self, title, msg, QMessageBox.Ok)

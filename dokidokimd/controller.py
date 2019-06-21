@@ -193,9 +193,8 @@ class DDMDController:
             manga.downloaded = True
             return manga
 
-    def crawl_chapter(self) -> Chapter:
+    def crawl_chapter(self, chapter: Chapter) -> Chapter:
         site = self.cwd_site
-        chapter = self.cwd_chapter
         crawler = self.__get_crawler(site.site_name)
         if crawler:
             crawler.download(chapter)
@@ -211,7 +210,7 @@ class DDMDController:
             self.pdf_converter.clear_pages()
             self.pdf_converter.add_chapter(chapter)
             self.pdf_converter.make_pdf(chapter.title)
-            self.pdf_converter.save_pdf(join(pdf_dir, chapter.path_safe_title()))
+            self.pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()))
             self.pdf_converter.clear_pages()
             chapter.converted = True
         except Exception as e:
@@ -241,19 +240,19 @@ class DDMDController:
 
     def save_images_from_chapter(self, chapter: Chapter) -> Tuple[bool, str]:
         images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
-                          chapter.manga_ref.get_path_safe_title())
+                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
         try:
             if not isdir(images_dir):
                 makedirs(images_dir, exist_ok=True)
-            numeration = len(str(chapter.pages))
             for idx, page in enumerate(chapter.pages):
                 img_type = imghdr.what(BytesIO(page))
-                path = join(images_dir, '{:0>{}d}_{}.{}'.format(idx, numeration, chapter.path_safe_title(), img_type))
+                path = join(images_dir, '{:0>2d}_{}.{}'.format(idx, chapter.get_path_safe_title(), img_type))
                 with open(path, 'wb') as f:
                     f.write(page)
         except Exception as e:
             logger.error(_('Could not save images to {}\nError message: {}').format(images_dir, e))
             return False, images_dir
+        chapter.saved = True
         return True, images_dir
 
     def store_sites(self) -> bool:

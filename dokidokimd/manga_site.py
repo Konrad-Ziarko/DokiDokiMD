@@ -32,7 +32,7 @@ class Chapter:
         self.downloaded = False     # type: bool
         self.converted = False      # type: bool
 
-    def path_safe_title(self) -> str:
+    def get_path_safe_title(self) -> str:
         return compiled_regex.sub(path_safe_replace_char, self.title)
 
     def dump(self):

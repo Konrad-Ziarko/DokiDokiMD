@@ -70,8 +70,9 @@ class MangaPandaCrawler(BaseCrawler):
                 image_src = str(tree.xpath('//*[@id="img"]/@src')[0])
                 image = requests.get(image_src, stream=True).content
                 chapter.pages.append(image)
-
                 nav_next = str(tree.xpath('//*[@id="navi"]/div[1]/span[2]/a/@href')[0])
+                if nav_next.startswith('/'):
+                    nav_next = 'https://www.mangapanda.com{}'.format(nav_next)
                 if start_url in nav_next:
                     # next button navigates to next page of a chapter
                     url = nav_next
