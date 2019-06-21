@@ -6,15 +6,12 @@ from typing import List
 
 from PIL import Image
 
-from dokidokimd import PROJECT_NAME
-from dokidokimd.convert.FPDFV2 import FPDFV2
-from dokidokimd.core.manga_site import Chapter
-from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.translation.translator import translate
+from tools.FPDFV2 import FPDFV2
+from manga_site import Chapter
+from tools.kz_logger import get_logger
+from tools.translator import translate as _
 
-_ = translate
-
-module_logger = get_logger('make_pdf')
+logger = get_logger(__name__)
 
 
 class PDF:
@@ -36,7 +33,7 @@ class PDF:
             self.files_list.insert(index, image_path)
 
     def add_dir(self, dir_path: str, extension_filter: str = None) -> None:
-        module_logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
+        logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
         if extension_filter is None:
             files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
         else:
@@ -46,7 +43,7 @@ class PDF:
         self.files_list += files
 
     def make_pdf(self, title: str) -> None:
-        module_logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
+        logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
         use_binary = False
         if len(self.pages_binary) > 0:
             use_binary = True
@@ -57,7 +54,7 @@ class PDF:
         self.builder = FPDFV2(unit='pt', format=[width, height])
         self.builder.compress = False
         self.builder.set_title(title)
-        self.builder.set_author(PROJECT_NAME)
+        #self.builder.set_author('')
 
         if use_binary:
             num_pages = len(self.pages_binary)
@@ -101,11 +98,11 @@ class PDF:
                 else:
                     self.builder.image(self.pages_binary[i], x, y, width2, height2)
 
-            module_logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
+            logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
 
     def save_pdf(self, path: str) -> None:
         self.builder.output(path, 'F')
-        module_logger.info(_('PDF saved to a {} file.').format(path))
+        logger.info(_('PDF saved to a {} file.').format(path))
 
 
 if __name__ == '__main__':

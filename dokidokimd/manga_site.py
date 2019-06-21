@@ -2,19 +2,18 @@ import pickle
 import re
 from typing import List
 
-from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.translation.translator import translate
+from tools.kz_logger import get_logger
+from tools.misc import get_object_mem_size
+from tools.translator import translate as _
 
-_ = translate
+logger = get_logger(__name__)
 
-module_logger = get_logger('manga_site')
+path_safe_regex = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
+path_safe_replace_char = r'_'
+compiled_regex = re.compile(path_safe_regex, re.UNICODE)
 
-PathSafeRegEx = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
-PathSafeReplaceChar = r'_'
-CompiledRegEx = re.compile(PathSafeRegEx, re.UNICODE)
-
-AvailableSites = {
-    'GoodManga': 'http://www.goodmanga.net/',
+available_sites = {
+    'Mangareader': 'https://www.mangareader.net',
     'MangaPanda': 'https://www.mangapanda.com/',
     'KissManga': 'http://kissmanga.com/',
 }
@@ -35,7 +34,7 @@ class Chapter:
         self.converted = False      # type: bool
 
     def get_path_safe_title(self) -> str:
-        return CompiledRegEx.sub(PathSafeReplaceChar, self.title)
+        return compiled_regex.sub(path_safe_replace_char, self.title)
 
     def dump(self):
         return pickle.dumps(self)
@@ -78,7 +77,7 @@ class Manga:
         self.downloaded = False  # type: bool
 
     def get_path_safe_title(self) -> str:
-        return CompiledRegEx.sub(PathSafeReplaceChar, self.title)
+        return compiled_regex.sub(path_safe_replace_char, self.title)
 
     def add_chapter(self, chapter) -> None:
         chapter.manga_ref = self
@@ -87,7 +86,6 @@ class Manga:
             self.chapters.append(chapter)
         elif chapter.url not in [x.url for x in self.chapters if x.url == chapter.url]:
             self.chapters.append(chapter)
-        module_logger.debug(_('Added [{}] chapter {} to manga {}.').format(len(self.chapters), chapter.title, self.title))
 
     def dump(self):
         return pickle.dumps(self)
@@ -116,10 +114,10 @@ class MangaSite:
             self.mangas.append(manga)
         elif manga.url not in [x.url for x in self.mangas if x.url == manga.url]:
             self.mangas.append(manga)
-        module_logger.debug(_('Added [{}] manga {} to site {}.').format(len(self.mangas), manga.title, self.site_name))
 
     def dump(self):
-        module_logger.debug(_('Dumped {} site with {} mangas.').format(self.site_name, len(self.mangas)))
+        logger.debug(_('Dumped {} site with {} mangas - size in memory = {} bytes.').format(
+            self.site_name, len(self.mangas), get_object_mem_size(self)))
         return pickle.dumps(self)
 
     def __getstate__(self):

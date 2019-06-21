@@ -2,7 +2,7 @@ import os
 from os import popen
 
 make_spec = 'python3 -m PyInstaller --specpath ../installer/spec --distpath ../installer/dist --workpath ../installer/build --onefile --windowed --name=DokiDokiMD --clean ' \
-            '--strip ../dokidokimd/__main__.py'
+            '--strip ../dokidokimd/main.py'
 run_spec = 'python3 -m PyInstaller ../installer/spec/DokiDokiMD.spec'
 
 run_cmd = make_spec

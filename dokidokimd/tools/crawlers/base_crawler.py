@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from dokidokimd.core.manga_site import MangaSite, Manga, Chapter
+from manga_site import MangaSite, Manga, Chapter
 
 
 class BaseCrawler:

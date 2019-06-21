@@ -3,14 +3,12 @@ from urllib.parse import urljoin
 import requests
 from lxml import html
 
-from dokidokimd.core.manga_site import Manga, Chapter, AvailableSites, MangaSite
-from dokidokimd.dd_logger.dd_logger import get_logger
-from dokidokimd.net.crawler.base_crawler import BaseCrawler
-from dokidokimd.translation.translator import translate
+from manga_site import Manga, Chapter, available_sites, MangaSite
+from tools.kz_logger import get_logger
+from tools.crawlers.base_crawler import BaseCrawler
+from tools.translator import translate as _
 
-_ = translate
-
-module_logger = get_logger('crawler.kissmanga')
+logger = get_logger(__name__)
 
 
 class KissMangaCrawler(BaseCrawler):
@@ -18,7 +16,7 @@ class KissMangaCrawler(BaseCrawler):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.base_url = AvailableSites['KissManga']  # type: str
+        self.base_url = available_sites['KissManga']  # type: str
 
     def crawl_index(self, manga_site: MangaSite) -> None:
         start_url = urljoin(self.base_url, '/MangaList')
