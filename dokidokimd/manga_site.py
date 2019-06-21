@@ -3,6 +3,7 @@ import re
 from typing import List
 
 from tools.kz_logger import get_logger
+from tools.misc import get_object_mem_size
 from tools.translator import translate as _
 
 logger = get_logger(__name__)
@@ -115,7 +116,8 @@ class MangaSite:
             self.mangas.append(manga)
 
     def dump(self):
-        logger.debug(_('Dumped {} site with {} mangas.').format(self.site_name, len(self.mangas)))
+        logger.debug(_('Dumped {} site with {} mangas - size in memory = {} bytes.').format(
+            self.site_name, len(self.mangas), get_object_mem_size(self)))
         return pickle.dumps(self)
 
     def __getstate__(self):

@@ -55,19 +55,40 @@ class ConfigManager(object):
             self.config.write(configfile)
 
 
+class SingleChapterDownloadThread(QThread):
+    signal = pyqtSignal('PyQt_PyObject')
+
+    def __init__(self, ddmd, chapter):
+        QThread.__init__(self)
+        self.ddmd = ddmd
+        self.chapter = chapter
+
+    def run(self):
+        self.ddmd.crawl_chapter(self.chapter)
+        self.ddmd.save_images_from_chapter(self.chapter)
+        self.signal.emit("Downloaded {}".format(self.chapter.title))
+
+
 class DownloadThread(QThread):
     signal = pyqtSignal('PyQt_PyObject')
 
-    def __init__(self, ddmd, chapters):
+    def __init__(self, ddmd, callable_fun, chapters):
         QThread.__init__(self)
         self.ddmd = ddmd
         self.chapters = chapters
+        self.callable_fun = callable_fun
+        self.threads = list()
 
     def run(self):
         for chapter in self.chapters:
-            self.ddmd.crawl_chapter(chapter)
-            self.ddmd.save_images_from_chapter(chapter)
-        self.signal.emit(True)
+            t = SingleChapterDownloadThread(self.ddmd, chapter)
+            t.signal.connect(self.callable_fun)
+            self.threads.append(t)
+            t.start()
+
+        while any(t.isRunning() for t in self.threads):
+            pass
+        self.signal.emit("Download completed")
 
 
 class ListWidget(QListWidget):
@@ -143,9 +164,21 @@ class MangaSiteWidget(QWidget):
         self.chapters_list.customContextMenuRequested.connect(self.chapter_list_item_right_clicked)
         self.setLayout(hbox)
 
+    def repaint_chapters(self):
+        indexes = [idx.row() for idx in self.chapters_list.selectedIndexes()]
+        self.load_stored_chapters(self.ddmd.get_current_manga())
+        for i in indexes:
+            self.chapters_list.item(i).setSelected(True)
+
+    def download_finished(self, string):
+        self.parent().show_msg_on_status_bar(string)
+        self.repaint_chapters()
+
     def chapter_list_item_right_clicked(self, QPos):
         list_menu = QtWidgets.QMenu()
-        menu_item_remove = list_menu.addAction(_('Remove Item'))  # This should clear chapter info and downloaded flag
+        clear_action = QAction(_('Clear item'), self)
+        clear_action.triggered.connect(self.chapter_clear_clicked)
+        menu_item_clear = list_menu.addAction(clear_action)  # This should clear chapter info and downloaded flag
         list_menu.addSeparator()
         download_action = QAction(_('Download'), self)
         download_action.triggered.connect(self.chapter_download_clicked)
@@ -156,16 +189,21 @@ class MangaSiteWidget(QWidget):
 
         list_menu.exec_(QCursor.pos())
 
+    def chapter_clear_clicked(self):
+        selected_chapters = self.chapters_list.selectedItems()
+        for selected_chapter in selected_chapters:
+            chapter = selected_chapter.data(QtCore.Qt.UserRole)
+            chapter.downloaded = chapter.converted = False
+            chapter.pages = []
+        self.repaint_chapters()
+
     def chapter_download_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
         ch = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
-        self.download_thread = DownloadThread(self.ddmd, ch)
-        self.download_thread.signal.connect(self.download_thread_finished)
+        self.parent().show_msg_on_status_bar(_("Downloading chapters..."))
+        self.download_thread = DownloadThread(self.ddmd, self.download_finished, ch)
+        self.download_thread.signal.connect(self.download_finished)
         self.download_thread.start()
-
-    def download_thread_finished(self, result):
-        self.parent().show_msg_on_status_bar("Done")
-        self.load_stored_chapters(self.ddmd.get_current_manga())
 
     def chapter_double_clicked(self, chapter_index):
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)

@@ -93,7 +93,7 @@ class ColumnChapters(urwid.WidgetWrap):
         self.root.window.convert_chapter_2_pdf()
 
     def remove_images(self, button):
-        self.root.window.remove_images()
+        self.root.window.remove_chapter_images()
 
 
 class ColumnMangas(urwid.WidgetWrap):
@@ -365,7 +365,7 @@ class Window:
             else:
                 self.change_footer(_('Removing images for {}').format(chapter.title))
                 try:
-                    boolean, path = self.controller.remove_images(chapter)
+                    boolean, path = self.controller.remove_chapter_images(chapter)
                     if boolean:
                         # self.root.fresh_open(self.sites_to_menu().menu)
                         self.change_footer(_('Removed images for {} from {}').format(chapter.title, path))

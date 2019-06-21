@@ -218,9 +218,9 @@ class DDMDController:
             return False, pdf_dir
         return True, pdf_dir
 
-    def remove_images(self, chapter: Chapter) -> Tuple[bool, str]:
+    def remove_chapter_images(self, chapter: Chapter) -> Tuple[bool, str]:
         images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
-                          chapter.manga_ref.get_path_safe_title())
+                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
         try:
             if not isdir(images_dir):
                 return False, images_dir
