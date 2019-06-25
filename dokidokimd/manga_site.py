@@ -32,6 +32,17 @@ class Chapter:
 
         self.downloaded = False     # type: bool
         self.converted = False      # type: bool
+        self.in_memory = False      # type: bool
+
+    def set_downloaded(self, state=True):
+        self.downloaded = state
+        self.in_memory = state
+
+    def clear_state(self):
+        self.pages = []
+        self.downloaded = False
+        self.in_memory = False
+        self.converted = False
 
     def get_path_safe_title(self) -> str:
         return compiled_regex.sub(path_safe_replace_char, self.title)
@@ -42,8 +53,8 @@ class Chapter:
     def __getstate__(self):
         state = self.__dict__.copy()
         try:
-            # del state['pages']
             state['pages'] = []
+            state['in_memory'] = False
         except Exception as e:
             pass
         return state
@@ -54,6 +65,8 @@ class Chapter:
             self.downloaded = False
         if not hasattr(self, 'converted'):
             self.converted = False
+        if not hasattr(self, 'in_memory'):
+            self.in_memory = False
         if not hasattr(self, 'pages'):
             self.pages = []
 

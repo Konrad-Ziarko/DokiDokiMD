@@ -59,7 +59,7 @@ class MangareaderCrawler(BaseCrawler):
             raise ConnectionError(
                 _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
-    def download(self, chapter: Chapter) -> None:
+    def download(self, chapter: Chapter) -> int:
         # FIXME 1: split single page chapters
         start_url = chapter.url
         url = start_url
@@ -84,3 +84,4 @@ class MangareaderCrawler(BaseCrawler):
             else:
                 raise ConnectionError(
                     _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+        return len(chapter.pages)

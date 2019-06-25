@@ -1,12 +1,13 @@
-import imghdr
 from io import BytesIO
 from os import listdir
 from os.path import isfile, join
 from typing import List
 
 from PIL import Image
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen.canvas import Canvas
 
-from tools.FPDFV2 import FPDFV2
 from manga_site import Chapter
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
@@ -18,13 +19,13 @@ class PDF:
     def __init__(self) -> None:
         self.pages_binary = list()  # type: List[bytes]
         self.files_list = list()  # type: List[str]
-        self.builder = None  # type: FPDFV2
+        self.builder = None  # type: Canvas
 
     def clear_pages(self) -> None:
         self.pages_binary = list()
 
     def add_chapter(self, chapter: Chapter):
-        self.pages_binary += chapter.pages
+        self.pages_binary.extend(chapter.pages)
 
     def add_page_from_file(self, image_path: str, index: int = None) -> None:
         if index is None:
@@ -42,20 +43,13 @@ class PDF:
         files = sorted(files)
         self.files_list += files
 
-    def make_pdf(self, title: str) -> None:
-        logger.debug(_('Started make_pdf #if orientation=L x and y are swapped.'))
+    def make_pdf(self, title: str, path: str) -> None:
         use_binary = False
         if len(self.pages_binary) > 0:
             use_binary = True
-            width, height = Image.open(BytesIO(self.pages_binary[0])).size
-        else:
-            width, height = Image.open(self.files_list[0]).size
 
-        self.builder = FPDFV2(unit='pt', format=[width, height])
-        self.builder.compress = False
-        self.builder.set_title(title)
-        #self.builder.set_author('')
-
+        self.builder = Canvas(path, pageCompression=False, pagesize=A4)
+        self.builder.setTitle(title)
         if use_binary:
             num_pages = len(self.pages_binary)
         else:
@@ -63,46 +57,20 @@ class PDF:
 
         for i in range(num_pages):
             if use_binary:
-                width2, height2 = Image.open(BytesIO(self.pages_binary[0])).size
+                width, height = Image.open(BytesIO(self.pages_binary[i])).size
             else:
-                width2, height2 = Image.open(self.pages_binary[i]).size
-            if width2 > height2:
-                orientation = 'L'
-            else:
-                orientation = 'P'
-            self.builder.add_page(orientation)
-
-            x = y = 0
-            if width2 != width and height2 != height:
-                w = width2 / width
-                h = height2 / height
-                if w < h:
-                    height2 = height
-                    x = (width - width2 / h) / 2
-                    width2 = 0
-                else:
-                    width2 = width
-                    y = (height - height2 / w) / 2
-                    height2 = 0
+                width, height = Image.open(self.files_list[i]).size
+            self.builder.setPageSize((width, height))
 
             if use_binary:
-                img = BytesIO(self.pages_binary[i])
-                img_type = imghdr.what(img)
-                if orientation is 'L':
-                    self.builder.image('', y, x, width2, height2, type=img_type, link=None, file=img)
-                else:
-                    self.builder.image('', x, y, width2, height2, type=img_type, link=None, file=img)
+                self.builder.drawImage(ImageReader(Image.open(BytesIO(self.pages_binary[i]))), 0, 0)
+                self.builder.showPage()
             else:
-                if orientation is 'L':
-                    self.builder.image(self.pages_binary[i], y, x, width2, height2)
-                else:
-                    self.builder.image(self.pages_binary[i], x, y, width2, height2)
-
-            logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
-
-    def save_pdf(self, path: str) -> None:
-        self.builder.output(path, 'F')
+                self.builder.drawImage(self.files_list[i], 0, 0)
+                self.builder.showPage()
+        self.builder.save()
         logger.info(_('PDF saved to a {} file.').format(path))
+        return num_pages
 
 
 if __name__ == '__main__':

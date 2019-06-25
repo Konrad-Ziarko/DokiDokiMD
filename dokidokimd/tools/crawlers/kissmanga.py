@@ -58,7 +58,7 @@ class KissMangaCrawler(BaseCrawler):
         else:
             raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
 
-    def download(self, chapter: Chapter) -> None:
+    def download(self, chapter: Chapter) -> int:
         start_url = chapter.url
         url = start_url
         chapter.pages = []
@@ -81,3 +81,4 @@ class KissMangaCrawler(BaseCrawler):
                     retrieved_all_pages = True
             else:
                 raise ConnectionError(_('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+        return len(chapter.pages)
