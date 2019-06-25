@@ -24,7 +24,7 @@ class PDF:
         self.pages_binary = list()
 
     def add_chapter(self, chapter: Chapter):
-        self.pages_binary += chapter.pages
+        self.pages_binary.extend(chapter.pages)
 
     def add_page_from_file(self, image_path: str, index: int = None) -> None:
         if index is None:
@@ -63,9 +63,9 @@ class PDF:
 
         for i in range(num_pages):
             if use_binary:
-                width2, height2 = Image.open(BytesIO(self.pages_binary[0])).size
+                width2, height2 = Image.open(BytesIO(self.pages_binary[i])).size
             else:
-                width2, height2 = Image.open(self.pages_binary[i]).size
+                width2, height2 = Image.open(self.files_list[i]).size
             if width2 > height2:
                 orientation = 'L'
             else:
@@ -73,6 +73,8 @@ class PDF:
             self.builder.add_page(orientation)
 
             x = y = 0
+            a = width2
+            b = height2
             if width2 != width and height2 != height:
                 w = width2 / width
                 h = height2 / height
@@ -89,14 +91,16 @@ class PDF:
                 img = BytesIO(self.pages_binary[i])
                 img_type = imghdr.what(img)
                 if orientation is 'L':
-                    self.builder.image('', y, x, width2, height2, type=img_type, link=None, file=img)
+                    #self.builder.image('', y, x, width2, height2, type=img_type, link=None, file=img)
+                    self.builder.image('', type=img_type, link=None, file=img)
                 else:
                     self.builder.image('', x, y, width2, height2, type=img_type, link=None, file=img)
             else:
                 if orientation is 'L':
-                    self.builder.image(self.pages_binary[i], y, x, width2, height2)
+                    #self.builder.image(self.files_list[i], x, y, width2, height2)
+                    self.builder.image(self.files_list[i], 0, 0, a, b)
                 else:
-                    self.builder.image(self.pages_binary[i], x, y, width2, height2)
+                    self.builder.image(self.files_list[i], x, y, width2, height2)
 
             logger.debug(_('Page no. {} oriented {}, added to pdf, width={}, height={}, x={}, y={} ').format(i, orientation, width2, height2, x, y))
 

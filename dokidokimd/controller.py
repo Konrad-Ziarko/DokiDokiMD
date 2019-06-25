@@ -43,6 +43,10 @@ def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
 
 class DDMDController:
     def __init__(self) -> None:
+        self.downloaded_pages = 0                                   # type: int
+        self.downloaded_chapters = 0                                # type: int
+        self.converted_chapters = 0                                 # type: int
+
         self.cwd_site = None                                        # type: MangaSite
         self.cwd_manga = None                                       # type: Manga
         self.cwd_chapter = None                                     # type: Chapter
@@ -52,7 +56,6 @@ class DDMDController:
         self.save_location_sites = join(self.working_dir, 'sites')  # type: str
 
         self.manga_sites = []                                       # type: List[MangaSite]
-        self.pdf_converter = PDF()                                  # type: PDF
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
         self.load_sites()
         if len(self.manga_sites) == 0 or len(self.manga_sites) != len(MangaCrawlers.items()):
@@ -198,20 +201,55 @@ class DDMDController:
         crawler = self.__get_crawler(site.site_name)
         if crawler:
             crawler.download(chapter)
-            chapter.downloaded = True
+            chapter.set_downloaded()
             return chapter
 
+    def chapter_images_present(self, chapter: Chapter) -> bool:
+        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
+                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
+        if not isdir(images_dir):
+            return False
+        if not listdir(images_dir):
+            return False
+        return True
+
+    def convert_images_2_pdf(self, chapter: Chapter) -> Tuple[bool, str]:
+        """
+        Convert images stored on disk
+        """
+        pdf_dir = join(self.save_location_sites, 'converted', chapter.manga_ref.site_ref.site_name,
+                       chapter.manga_ref.get_path_safe_title())
+        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
+                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
+        if not isdir(images_dir):
+            logger.warning(_('Could not convert to PDF, source path with images does not exist'))
+            return False, pdf_dir
+        try:
+            pdf_converter = PDF()
+            pdf_converter.clear_pages()
+            pdf_converter.add_dir(images_dir)
+            pdf_converter.make_pdf(chapter.title)
+            pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
+            chapter.converted = True
+        except Exception as e:
+            logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
+            return False, pdf_dir
+        return True, pdf_dir
+
     def convert_chapter_2_pdf(self, chapter: Chapter) -> Tuple[bool, str]:
+        """
+        Convert freshly downloaded chapter (stored only in memory)
+        """
         pdf_dir = join(self.save_location_sites, 'converted', chapter.manga_ref.site_ref.site_name,
                        chapter.manga_ref.get_path_safe_title())
         try:
             if not isdir(pdf_dir):
                 makedirs(pdf_dir, exist_ok=True)
-            self.pdf_converter.clear_pages()
-            self.pdf_converter.add_chapter(chapter)
-            self.pdf_converter.make_pdf(chapter.title)
-            self.pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()))
-            self.pdf_converter.clear_pages()
+            pdf_converter = PDF()
+            pdf_converter.clear_pages()
+            pdf_converter.add_chapter(chapter)
+            pdf_converter.make_pdf(chapter.title)
+            pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
             chapter.converted = True
         except Exception as e:
             logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
@@ -246,7 +284,7 @@ class DDMDController:
                 makedirs(images_dir, exist_ok=True)
             for idx, page in enumerate(chapter.pages):
                 img_type = imghdr.what(BytesIO(page))
-                path = join(images_dir, '{:0>2d}_{}.{}'.format(idx, chapter.get_path_safe_title(), img_type))
+                path = join(images_dir, '{:0>3d}.{}'.format(idx, img_type))
                 with open(path, 'wb') as f:
                     f.write(page)
         except Exception as e:

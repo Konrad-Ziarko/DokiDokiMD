@@ -84,8 +84,8 @@ class DownloadThread(QThread):
         self.callable_fun = callable_fun
         self.threads = list()
 
-    def set_name(self, string):
-        self.name = string
+    def set_name(self, thread_name):
+        self.name = thread_name
 
     def run(self):
         for chapter in self.chapters:
@@ -93,9 +93,51 @@ class DownloadThread(QThread):
             t.signal.connect(self.callable_fun)
             self.threads.append(t)
             t.start()
+        for t in self.threads:
+            t.wait()
+        self.signal.emit(self.name)
 
-        while any(t.isRunning() for t in self.threads):
-            pass
+
+class SingleChapterConvertThread(QThread):
+    signal = pyqtSignal('PyQt_PyObject')
+
+    def __init__(self, ddmd, chapter):
+        QThread.__init__(self)
+        self.ddmd = ddmd
+        self.chapter = chapter
+
+    def run(self):
+        if self.chapter.in_memory:
+            self.ddmd.convert_chapter_2_pdf(self.chapter)
+        else:
+            if not self.ddmd.chapter_images_present(self.chapter):
+                self.signal.emit("Downloading {}".format(self.chapter.title))
+                self.ddmd.crawl_chapter(self.chapter)
+            self.ddmd.convert_images_2_pdf(self.chapter)
+            self.signal.emit("Converted {}".format(self.chapter.title))
+
+
+class ConvertThread(QThread):
+    signal = pyqtSignal('PyQt_PyObject')
+
+    def __init__(self, ddmd, callable_fun, chapters):
+        QThread.__init__(self)
+        self.ddmd = ddmd
+        self.chapters = chapters
+        self.callable_fun = callable_fun
+        self.threads = list()
+
+    def set_name(self, thread_name):
+        self.name = thread_name
+
+    def run(self):
+        for chapter in self.chapters:
+            t = SingleChapterConvertThread(self.ddmd, chapter)
+            t.signal.connect(self.callable_fun)
+            self.threads.append(t)
+            t.start()
+        for t in self.threads:
+            t.wait()
         self.signal.emit(self.name)
 
 
@@ -118,6 +160,7 @@ class MangaSiteWidget(QWidget):
         self.ddmd = controller
         self.filter_text = ''
         self.download_threads = dict()
+        self.convert_threads = dict()
 
         hbox = QHBoxLayout(self)
         vbox_left = QVBoxLayout(self)
@@ -183,9 +226,18 @@ class MangaSiteWidget(QWidget):
         self.parent().show_msg_on_status_bar(string)
         self.repaint_chapters()
 
-    def download_finished(self, name):
-        self.download_threads.pop(name)
+    def single_convert_finished(self, string):
+        self.parent().show_msg_on_status_bar(string)
+        self.repaint_chapters()
+
+    def download_finished(self, thread_name):
+        self.download_threads.pop(thread_name)
         self.parent().show_msg_on_status_bar(_("Download finished"))
+        self.repaint_chapters()
+
+    def convert_finished(self, thread_name):
+        self.convert_threads.pop(thread_name)
+        self.parent().show_msg_on_status_bar(_("Convert finished"))
         self.repaint_chapters()
 
     def chapter_list_item_right_clicked(self, QPos):
@@ -205,35 +257,43 @@ class MangaSiteWidget(QWidget):
         menu_item_make_pdf = list_menu.addAction(convert_action)
 
         list_menu.addSeparator()
-        # TODO mark_as_downloaded mark_as_converted remove_from_disk
+        # TODO add menus (mark_as_downloaded, mark_as_converted, remove_from_disk)
+        # TODO add menu open explorer disk location/open terminal
         list_menu.exec_(QCursor.pos())
 
     def chapter_clear_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
         for selected_chapter in selected_chapters:
             chapter = selected_chapter.data(QtCore.Qt.UserRole)
-            chapter.downloaded = chapter.converted = False
-            chapter.pages = []
+            chapter.clear_state()
         self.repaint_chapters()
-
-    def chapter_convert_clicked(self):
-        # TODO
-        raise NotImplementedError
 
     def chapter_download_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
         ch = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
-        self.parent().show_msg_on_status_bar(_("Downloading chapters..."))
+        self.parent().show_msg_on_status_bar(_('Downloading {} chapters...').format(
+            self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
         t = DownloadThread(self.ddmd, self.single_download_finished, ch)
         self.download_threads[str(t)] = t
         self.download_threads[str(t)].set_name(str(t))
         self.download_threads[str(t)].signal.connect(self.download_finished)
         self.download_threads[str(t)].start()
 
+    def chapter_convert_clicked(self):
+        selected_chapters = self.chapters_list.selectedItems()
+        ch = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+        self.parent().show_msg_on_status_bar(_('Converting {} chapters...').format(
+            self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
+        t = ConvertThread(self.ddmd, self.single_convert_finished, ch)
+        self.convert_threads[str(t)] = t
+        self.convert_threads[str(t)].set_name(str(t))
+        self.convert_threads[str(t)].signal.connect(self.convert_finished)
+        self.convert_threads[str(t)].start()
+
     def chapter_double_clicked(self, chapter_index):
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_chapter(chapter)
-        # FIXME double click should open chapter info ?
+        # TODO double click should open chapter info ?
 
     def manga_double_clicked(self, manga_index):
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
