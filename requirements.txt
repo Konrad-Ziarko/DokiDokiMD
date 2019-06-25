@@ -4,3 +4,4 @@ Pillow>=6.0.0
 reportlab>=3.5.23
 lxml>=4.3.3
 requests>=2.21.0
+PyQt5>=5.12

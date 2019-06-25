@@ -29,7 +29,8 @@ To post any issue use available issue templates:
 - [FEATURE](.github/ISSUE_TEMPLATE/feature_request.md)
 
 ## Dependencies
-- [reportlab](https://pypi.org/project/reportlab/)(custom) - PDF converter
+- [reportlab](https://pypi.org/project/reportlab/) - PDF converter
+- [PyQt5](https://pypi.org/project/PyQt5/) - GUI
 
 ## License
 This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE) file for details
