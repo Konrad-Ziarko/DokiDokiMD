@@ -13,5 +13,8 @@ class BaseCrawler:
         pass
 
     @abstractmethod
-    def download(self, chapter: Chapter) -> None:
+    def download(self, chapter: Chapter) -> int:
+        """
+        :return: number of downloaded pages
+        """
         pass

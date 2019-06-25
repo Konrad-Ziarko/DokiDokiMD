@@ -200,8 +200,10 @@ class DDMDController:
         site = self.cwd_site
         crawler = self.__get_crawler(site.site_name)
         if crawler:
-            crawler.download(chapter)
+            number_of_pages = crawler.download(chapter)
             chapter.set_downloaded()
+            self.downloaded_pages += number_of_pages
+            self.downloaded_chapters += 1
             return chapter
 
     def chapter_images_present(self, chapter: Chapter) -> bool:
@@ -228,9 +230,9 @@ class DDMDController:
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_dir(images_dir)
-            pdf_converter.make_pdf(chapter.title)
-            pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
+            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
             chapter.converted = True
+            self.converted_chapters += 1
         except Exception as e:
             logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
             return False, pdf_dir
@@ -248,9 +250,9 @@ class DDMDController:
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_chapter(chapter)
-            pdf_converter.make_pdf(chapter.title)
-            pdf_converter.save_pdf(join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
+            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
             chapter.converted = True
+            self.converted_chapters += 1
         except Exception as e:
             logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
             return False, pdf_dir
@@ -326,6 +328,8 @@ class DDMDController:
                 with open(path_to_file, 'wb') as the_file:
                     the_file.write(data)
         logger.info(_('Data saved to DB'))
+        logger.info(_('Stats: Downloaded Pages({}), Downloaded Chapters ({}), Converted PDFs ({})').format(
+            self.downloaded_pages, self.downloaded_chapters, self.converted_chapters))
         return True
 
     def load_sites(self) -> bool:

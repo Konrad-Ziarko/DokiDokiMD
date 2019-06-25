@@ -29,7 +29,7 @@ To post any issue use available issue templates:
 - [FEATURE](.github/ISSUE_TEMPLATE/feature_request.md)
 
 ## Dependencies
-- [PyFPDF](https://github.com/reingart/pyfpdf)(custom)
+- [reportlab](https://pypi.org/project/reportlab/)(custom) - PDF converter
 
 ## License
 This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE) file for details
