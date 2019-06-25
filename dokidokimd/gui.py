@@ -14,8 +14,13 @@ from tools.translator import translate as _
 
 logger = get_logger(__name__)
 
-DOWNLOADED_COLOR = 23, 150, 200, 250
-CONVERTER_COLOR = 11, 120, 10, 250
+QCOLOR_DOWNLOADED = QColor(23, 150, 200, 250)
+QCOLOR_CONVERTERR = QColor(11, 120, 10, 250)
+QCOLOR_HIGHLIGHT = QColor(142, 45, 197, 255)
+QCOLOR_WHITE = QColor(255, 255, 255, 220)
+QCOLOR_DARK = QColor(33, 33, 33, 220)
+
+CONFIG_FILE = 'ddmd.ini'
 
 
 class ConfigManager(object):
@@ -24,7 +29,7 @@ class ConfigManager(object):
         self.sot = None
         self.dark_mode = None
         try:
-            self.config.read('conf.ini')
+            self.config.read(CONFIG_FILE)
             if self.config.has_section('Window'):
                 pass
             else:
@@ -34,24 +39,24 @@ class ConfigManager(object):
 
     def read_config(self):
         try:
-            self.sot = self.config.getboolean('Window', 'Stay on top')
+            self.sot = self.config.getboolean('Window', 'stay_on_top')
         except:
-            self.config.set('Window', 'Stay on top', 'false')
+            self.config.set('Window', 'stay_on_top', 'false')
             self.sot = False
         try:
-            self.dark_mode = self.config.getboolean('Window', 'Dark mode')
+            self.dark_mode = self.config.getboolean('Window', 'dark_mode')
         except:
-            self.config.set('Window', 'Dark mode', 'true')
+            self.config.set('Window', 'dark_mode', 'true')
             self.dark_mode = False
 
     def set_sot(self, boolean):
-        self.config.set('Window', 'Stay on top', str(boolean))
+        self.config.set('Window', 'stay_on_top', str(boolean))
 
     def set_dark_mode(self, boolean):
-        self.config.set('Window', 'Dark mode', str(boolean))
+        self.config.set('Window', 'dark_mode', str(boolean))
 
     def write_config(self):
-        with open('conf.ini', 'w') as configfile:
+        with open(CONFIG_FILE, 'w') as configfile:
             self.config.write(configfile)
 
 
@@ -234,7 +239,7 @@ class MangaSiteWidget(QWidget):
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_manga(manga)
         self.update_chapters()
-        self.mangas_list.item(manga_index).setForeground(QColor(*DOWNLOADED_COLOR))
+        self.mangas_list.item(manga_index).setForeground(QCOLOR_DOWNLOADED)
 
     def manga_selected(self, manga_index):
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
@@ -254,9 +259,9 @@ class MangaSiteWidget(QWidget):
         for chapter in manga.chapters:
             item = QListWidgetItem(chapter.title)
             if chapter.downloaded:
-                item.setForeground(QColor(*DOWNLOADED_COLOR))
+                item.setForeground(QCOLOR_DOWNLOADED)
             if chapter.converted:
-                item.setForeground(QColor(*CONVERTER_COLOR))
+                item.setForeground(QCOLOR_CONVERTERR)
             item.setToolTip(chapter.title)
             item.setData(QtCore.Qt.UserRole, chapter)
             self.chapters_list.addItem(item)
@@ -270,7 +275,7 @@ class MangaSiteWidget(QWidget):
             if self.filter_text.lower() in manga.title.lower():
                 item = QListWidgetItem(manga.title)
                 if manga.downloaded:
-                    item.setForeground(QColor(*DOWNLOADED_COLOR))
+                    item.setForeground(QCOLOR_DOWNLOADED)
                 item.setToolTip(manga.title)
                 item.setData(QtCore.Qt.UserRole, manga)
                 self.mangas_list.addItem(item)
@@ -324,6 +329,7 @@ class GUI(QMainWindow):
 
     def init_menu_bar(self):
         menu_bar = self.menuBar()
+        # TODO
         file_menu = menu_bar.addMenu(_('File'))
         options_menu = menu_bar.addMenu(_('Options'))
         imp_menu = QMenu('Import', self)
@@ -335,6 +341,7 @@ class GUI(QMainWindow):
         new_act.triggered.connect(lambda: print('test'))
         file_menu.addAction(new_act)
         file_menu.addMenu(imp_menu)
+        # TODO END
 
         aot_menu = QAction(_('Stay on top'), self)
         aot_menu.setCheckable(True)
@@ -352,16 +359,16 @@ class GUI(QMainWindow):
         self.config.set_dark_mode(is_checked)
         if is_checked:
             p = self.qt_app.palette()
-            p.setColor(QPalette.Window, QColor(53, 53, 53))
-            p.setColor(QPalette.Button, QColor(63, 63, 63))
-            p.setColor(QPalette.Highlight, QColor(142, 45, 197))
-            p.setColor(QPalette.ButtonText, QColor(255, 255, 255))
-            p.setColor(QPalette.PlaceholderText, QColor(255, 255, 255))
-            p.setColor(QPalette.Background, QColor(33, 33, 33))
-            p.setColor(QPalette.Base, QColor(33, 33, 33))
-            p.setColor(QPalette.Text, QColor(255, 255, 255))
-            p.setColor(QPalette.PlaceholderText, QColor(255, 255, 255))
-            p.setColor(QPalette.Foreground, QColor(255, 255, 255))
+            p.setColor(QPalette.Window, QCOLOR_DARK)
+            p.setColor(QPalette.Button, QCOLOR_DARK)
+            p.setColor(QPalette.Highlight, QCOLOR_HIGHLIGHT)
+            p.setColor(QPalette.ButtonText, QCOLOR_WHITE)
+            p.setColor(QPalette.PlaceholderText, QCOLOR_WHITE)
+            p.setColor(QPalette.Background, QCOLOR_DARK)
+            p.setColor(QPalette.Base, QCOLOR_DARK)
+            p.setColor(QPalette.Text, QCOLOR_WHITE)
+            p.setColor(QPalette.PlaceholderText, QCOLOR_WHITE)
+            p.setColor(QPalette.Foreground, QCOLOR_WHITE)
             self.qt_app.setPalette(p)
         else:
             self.qt_app.setPalette(self.original_palette)
