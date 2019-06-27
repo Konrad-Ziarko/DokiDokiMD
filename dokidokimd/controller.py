@@ -5,18 +5,16 @@ from os.path import join, isdir, isfile
 from sys import platform
 from typing import List, Dict, Tuple, Union
 
-from tools.make_pdf import PDF
 from manga_site import load_dumped_site, MangaSite, Chapter, Manga
-from tools.kz_logger import get_logger
 from tools.crawlers.base_crawler import BaseCrawler
-from tools.crawlers.mangareader import MangareaderCrawler
 from tools.crawlers.kissmanga import KissMangaCrawler
 from tools.crawlers.mangapanda import MangaPandaCrawler
+from tools.crawlers.mangareader import MangareaderCrawler
+from tools.kz_logger import get_logger
+from tools.make_pdf import PDF
 from tools.translator import translate as _
 
 if platform == 'linux' or platform == 'linux2':
-    pass
-elif platform == 'darwin':
     pass
 elif platform == 'win32':
     pass
@@ -53,7 +51,7 @@ class DDMDController:
         self.cwd_page = -1                                          # type: int
 
         self.working_dir = getcwd()                                 # type: str
-        self.save_location_sites = join(self.working_dir, 'sites')  # type: str
+        self.sites_location = join(self.working_dir, 'sites')  # type: str
 
         self.manga_sites = []                                       # type: List[MangaSite]
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
@@ -95,30 +93,6 @@ class DDMDController:
     def set_cwd_chapter(self, chapter: Chapter):
         self.cwd_chapter = chapter
         self.cwd_page = None
-
-    def get_cwd_string(self) -> str:
-        """
-        This method produces string representing path to specified place
-        :return: String representing current working directory
-        """
-        cwd = '/'
-        try:
-            if self.cwd_site:
-                tmp = self.cwd_site
-                cwd += '{}'.format(tmp.site_name)
-                if self.cwd_manga:
-                    tmp = tmp.mangas[self.cwd_manga]
-                    cwd += '/{}'.format(tmp.title)
-                    if self.cwd_chapter:
-                        tmp = tmp.chapters[self.cwd_chapter]
-                        cwd += '/{}'.format(tmp.title)
-                        if self.cwd_page:
-                            cwd += '/{}'.format(self.cwd_page)
-        except Exception as e:
-            logger.error(_('Could not build path for site_number={}, manga_number={}, chapter_number={}, page={}.\n'
-                                  'Exception message: {}').format(self.cwd_site, self.cwd_manga, self.cwd_chapter, self.cwd_page, e))
-            self._reset_cwd()
-        return cwd
 
     def list_sites(self, delimiter: str = '\t') -> str:
         i = 0
@@ -207,7 +181,7 @@ class DDMDController:
             return chapter
 
     def chapter_images_present(self, chapter: Chapter) -> bool:
-        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
+        images_dir = join(self.sites_location, 'downloaded', chapter.manga_ref.site_ref.site_name,
                           chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
         if not isdir(images_dir):
             return False
@@ -219,10 +193,8 @@ class DDMDController:
         """
         Convert images stored on disk
         """
-        pdf_dir = join(self.save_location_sites, 'converted', chapter.manga_ref.site_ref.site_name,
-                       chapter.manga_ref.get_path_safe_title())
-        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
-                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
+        pdf_dir = chapter.get_convert_path(self.sites_location)
+        images_dir = chapter.get_download_path(self.sites_location)
         if not isdir(images_dir):
             logger.warning(_('Could not convert to PDF, source path with images does not exist'))
             return False, pdf_dir
@@ -242,8 +214,7 @@ class DDMDController:
         """
         Convert freshly downloaded chapter (stored only in memory)
         """
-        pdf_dir = join(self.save_location_sites, 'converted', chapter.manga_ref.site_ref.site_name,
-                       chapter.manga_ref.get_path_safe_title())
+        pdf_dir = chapter.get_convert_path(self.sites_location)
         try:
             if not isdir(pdf_dir):
                 makedirs(pdf_dir, exist_ok=True)
@@ -259,8 +230,7 @@ class DDMDController:
         return True, pdf_dir
 
     def remove_chapter_images(self, chapter: Chapter) -> Tuple[bool, str]:
-        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
-                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
+        images_dir = chapter.get_download_path(self.sites_location)
         try:
             if not isdir(images_dir):
                 return False, images_dir
@@ -279,8 +249,7 @@ class DDMDController:
         return True, images_dir
 
     def save_images_from_chapter(self, chapter: Chapter) -> Tuple[bool, str]:
-        images_dir = join(self.save_location_sites, 'downloaded', chapter.manga_ref.site_ref.site_name,
-                          chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
+        images_dir = chapter.get_download_path(self.sites_location)
         try:
             if not isdir(images_dir):
                 makedirs(images_dir, exist_ok=True)
@@ -297,17 +266,17 @@ class DDMDController:
 
     def store_sites(self) -> bool:
         try:
-            if not isdir(self.save_location_sites):
-                makedirs(self.save_location_sites, exist_ok=True)
+            if not isdir(self.sites_location):
+                makedirs(self.sites_location, exist_ok=True)
         except Exception as e:
             logger.critical(_('Could not make or access directory {}\nError message: {}').format(
-                self.save_location_sites, e))
+                self.sites_location, e))
             return False
 
         for manga_site in self.manga_sites:
             data = manga_site.dump()
 
-            path_to_file = join(self.save_location_sites, manga_site.site_name)
+            path_to_file = join(self.sites_location, manga_site.site_name)
             path_to_old_file = '{}.old'.format(path_to_file)
 
             if isfile(path_to_file):
@@ -334,16 +303,16 @@ class DDMDController:
 
     def load_sites(self) -> bool:
         self.manga_sites = []
-        if not isdir(self.save_location_sites):
-            makedirs(self.save_location_sites, exist_ok=True)
+        if not isdir(self.sites_location):
+            makedirs(self.sites_location, exist_ok=True)
             logger.info(_('No saved state. Creating dir for fresh DB'))
             return False
-        for file_name in listdir(self.save_location_sites):
+        for file_name in listdir(self.sites_location):
             if not file_name.endswith('.old'):
-                if isfile(join(self.save_location_sites, file_name)):
+                if isfile(join(self.sites_location, file_name)):
                     logger.info(_('Loading last state for {}').format(file_name))
                     try:
-                        with open(join(self.save_location_sites, file_name), 'rb') as the_file:
+                        with open(join(self.sites_location, file_name), 'rb') as the_file:
                             data = the_file.read()
                             manga_site = load_dumped_site(data)
                             self.manga_sites.append(manga_site)
@@ -351,7 +320,7 @@ class DDMDController:
                         logger.warning(_(
                             'Could not load last state, trying older one. Error message: {}').format(e1))
                         try:
-                            with open('{}.old'.format(join(self.save_location_sites, file_name)), 'rb') as the_file:
+                            with open('{}.old'.format(join(self.sites_location, file_name)), 'rb') as the_file:
                                 data = the_file.read()
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)
