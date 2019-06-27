@@ -1,4 +1,6 @@
-import subprocess
+import os
+import shutil
+from sys import platform
 from typing import Dict
 
 from PyQt5 import QtCore, QtWidgets
@@ -81,14 +83,21 @@ class MangaSiteWidget(QWidget):
             lambda: self.manga_selected(self.mangas_list.currentRow())
         )
         self.mangas_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.mangas_list.customContextMenuRequested.connect(lambda: self.manga_context_menu.exec_(QCursor.pos()))
+        self.mangas_list.customContextMenuRequested.connect(
+            lambda: (
+                self.manga_selected(self.mangas_list.currentRow()),
+                self.manga_context_menu.exec_(QCursor.pos())
+            )
+        )
         vbox_left.addWidget(self.mangas_list)
         # endregion
 
         # region textbox for manga filter
         self.filter_mangas_textbox.setToolTip(_('Filter'))
         self.filter_mangas_textbox.setPlaceholderText(_('Search manga...'))
-        self.filter_mangas_textbox.textChanged.connect(lambda: self.apply_filter(self.filter_mangas_textbox.text()))
+        self.filter_mangas_textbox.textChanged.connect(
+            lambda: self.apply_filter(self.filter_mangas_textbox.text())
+        )
         vbox_left.addWidget(self.filter_mangas_textbox)
         # endregion
 
@@ -99,7 +108,9 @@ class MangaSiteWidget(QWidget):
         self.chapters_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         hbox.addWidget(self.chapters_list)
         self.chapters_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.chapters_list.customContextMenuRequested.connect(lambda: self.chapter_context_menu.exec_(QCursor.pos()))
+        self.chapters_list.customContextMenuRequested.connect(
+            lambda: self.chapter_context_menu.exec_(QCursor.pos())
+        )
         # endregion
 
         # region Manga contextmenu
@@ -107,16 +118,30 @@ class MangaSiteWidget(QWidget):
         clear_action.triggered.connect(self.manga_clear_clicked)
         self.manga_context_menu.addAction(clear_action)
         self.manga_context_menu.addSeparator()
+
         download_action = QAction(_('Download'), self)
         download_action.triggered.connect(self.manga_download_clicked)
         self.manga_context_menu.addAction(download_action)
         self.manga_context_menu.addSeparator()
+
         open_explorer_action = QAction(_('Show in File Explorer'), self)
-        open_explorer_action.triggered.connect(self.manga_open_file_explorer)
+        open_explorer_action.triggered.connect(
+            lambda: self.open_file_explorer('M')
+        )
         self.manga_context_menu.addAction(open_explorer_action)
+
         open_terminal_action = QAction(_('Show in Terminal'), self)
-        open_terminal_action.triggered.connect(self.manga_open_terminal)
+        open_terminal_action.triggered.connect(
+            lambda: self.open_terminal('M')
+        )
         self.manga_context_menu.addAction(open_terminal_action)
+        self.manga_context_menu.addSeparator()
+
+        remove_from_disk = QAction(_('Remove from disk'), self)
+        remove_from_disk.triggered.connect(
+            lambda: self.remove_from_disk('M')
+        )
+        self.manga_context_menu.addAction(remove_from_disk)
         # endregion
 
         # region Chapter contextmenu
@@ -124,15 +149,43 @@ class MangaSiteWidget(QWidget):
         clear_action.triggered.connect(self.chapter_clear_clicked)
         self.chapter_context_menu.addAction(clear_action)
         self.chapter_context_menu.addSeparator()
+
         download_action = QAction(_('Download'), self)
         download_action.triggered.connect(self.chapter_download_clicked)
         self.chapter_context_menu.addAction(download_action)
+
         convert_action = QAction(_('Save as PDF'), self)
         convert_action.triggered.connect(self.chapter_convert_clicked)
         self.chapter_context_menu.addAction(convert_action)
         self.chapter_context_menu.addSeparator()
-        # TODO add menus (mark_as_downloaded, mark_as_converted, remove_from_disk)
-        # TODO add menu open explorer disk location/open terminal
+
+        mark_download_action = QAction(_('Mark as downloaded'), self)
+        mark_download_action.triggered.connect(self.mark_as_downloaded)
+        self.chapter_context_menu.addAction(mark_download_action)
+
+        mark_converted_action = QAction(_('Mark as converted'), self)
+        mark_converted_action.triggered.connect(self.mark_as_converted)
+        self.chapter_context_menu.addAction(mark_converted_action)
+        self.chapter_context_menu.addSeparator()
+
+        open_explorer_action = QAction(_('Show in File Explorer'), self)
+        open_explorer_action.triggered.connect(
+            lambda: self.open_file_explorer('C')
+        )
+        self.chapter_context_menu.addAction(open_explorer_action)
+
+        open_terminal_action = QAction(_('Show in Terminal'), self)
+        open_terminal_action.triggered.connect(
+            lambda: self.open_terminal('C')
+        )
+        self.chapter_context_menu.addAction(open_terminal_action)
+        self.chapter_context_menu.addSeparator()
+
+        remove_from_disk = QAction(_('Remove from disk'), self)
+        remove_from_disk.triggered.connect(
+            lambda: self.remove_from_disk('C')
+        )
+        self.chapter_context_menu.addAction(remove_from_disk)
         # endregion
 
         self.setLayout(hbox)
@@ -142,6 +195,11 @@ class MangaSiteWidget(QWidget):
         self.load_stored_chapters(self.ddmd.get_current_manga())
         for i in indexes:
             self.chapters_list.item(i).setSelected(True)
+
+    def repaint_mangas(self):
+        index = self.mangas_list.currentRow()
+        self.load_stored_mangas(self.ddmd.get_current_site())
+        self.mangas_list.item(index).setSelected(True)
 
     # region Thread slots
     def single_download_finished(self, string):
@@ -184,10 +242,10 @@ class MangaSiteWidget(QWidget):
 
     def chapter_convert_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
-        ch = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
         self.parent().show_msg_on_status_bar(_('Converting {} chapters...').format(
             self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = ConvertThread(self.ddmd, self.single_convert_finished, ch)
+        t = ConvertThread(self.ddmd, self.single_convert_finished, chapters)
         self.convert_threads[str(t)] = t
         self.convert_threads[str(t)].set_name(str(t))
         self.convert_threads[str(t)].signal.connect(self.convert_finished)
@@ -197,13 +255,28 @@ class MangaSiteWidget(QWidget):
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_chapter(chapter)
         self.chapter_download_clicked()
+
+    def mark_as_downloaded(self):
+        selected_chapters = self.chapters_list.selectedItems()
+        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+        for chapter in chapters:
+            chapter.set_downloaded(True)
+        self.repaint_chapters()
+
+    def mark_as_converted(self):
+        selected_chapters = self.chapters_list.selectedItems()
+        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+        for chapter in chapters:
+            chapter.converted = True
+        self.repaint_chapters()
     # endregion
 
     # region manga_list actions
     def manga_clear_clicked(self):
         manga = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
         manga.clear_state()
-        self.repaint_chapters()
+        self.repaint_mangas()
+        self.load_stored_chapters()
 
     def manga_download_clicked(self):
         self.download_manga(self.mangas_list.currentRow())
@@ -282,13 +355,49 @@ class MangaSiteWidget(QWidget):
             self.parent().setEnabled(True)
     # endregion
 
-    def manga_open_file_explorer(self):
-        manga = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
-        path = manga.get_download_path(self.ddmd.sites_location)
-        subprocess.call('explorer "{}"'.format(path))
+    def open_file_explorer(self, level: str):
+        base_path = self.ddmd.sites_location
+        if level == 'M':
+            list_object = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
+        elif level == 'C':
+            list_object = self.chapters_list.item(self.chapters_list.currentRow()).data(QtCore.Qt.UserRole)
+        else:
+            return
+        path = list_object.get_download_path(base_path)
+        if platform == 'linux' or platform == 'linux2':
+            os.system('gio open "{}"'.format(path))
+        elif platform == 'win32':
+            os.system('explorer "{}"'.format(path))
 
-    def manga_open_terminal(self):
-        pass
+    def open_terminal(self, level: str):
+        base_path = self.ddmd.sites_location
+        if level == 'M':
+            list_object = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
+        elif level == 'C':
+            list_object = self.chapters_list.item(self.chapters_list.currentRow()).data(QtCore.Qt.UserRole)
+        else:
+            return
+        path = list_object.get_download_path(base_path)
+        if platform == 'linux' or platform == 'linux2':
+            os.system('gnome-terminal --working-directory="{}"'.format(path))
+        elif platform == 'win32':
+            os.system('start cmd /K "cd /d {}"'.format(path))
+
+    def remove_from_disk(self, level: str):
+        base_path = self.ddmd.sites_location
+        if level == 'M':
+            list_object = [self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)]
+            self.manga_clear_clicked()
+        elif level == 'C':
+            list_object = [chapter.data(QtCore.Qt.UserRole) for chapter in self.chapters_list.selectedItems()]
+            self.chapter_clear_clicked()
+        else:
+            return
+        for obj in list_object:
+            try:
+                shutil.rmtree(obj.get_download_path(base_path))
+            except FileNotFoundError:
+                logger.warning(_('Could not remove non-existent directory {}').format(obj.get_download_path(base_path)))
 
     def apply_filter(self, text):
         self.filter_text = text
