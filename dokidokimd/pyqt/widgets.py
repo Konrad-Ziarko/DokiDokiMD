@@ -12,7 +12,8 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QCom
 from consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
 from controller import DDMDController
 from tools.kz_logger import get_logger
-from tools.thread_helpers import DownloadThread, ConvertThread
+from tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, SingleChapterConvertThread, \
+    GroupOfThreads
 from tools.translator import translate as _
 
 logger = get_logger(__name__)
@@ -36,8 +37,7 @@ class MangaSiteWidget(QWidget):
         super(MangaSiteWidget, self).__init__(parent)
         self.ddmd = controller                          # type: DDMDController
         self.filter_text = ''                           # type: str
-        self.download_threads = dict()                  # type: Dict
-        self.convert_threads = dict()                   # type: Dict
+        self.threads = dict()                           # type: Dict
 
         hbox = QHBoxLayout(self)
         vbox_left = QVBoxLayout(self)
@@ -119,7 +119,7 @@ class MangaSiteWidget(QWidget):
         self.manga_context_menu.addAction(clear_action)
         self.manga_context_menu.addSeparator()
 
-        download_action = QAction(_('Download'), self)
+        download_action = QAction(_('Index chapters'), self)
         download_action.triggered.connect(self.manga_download_clicked)
         self.manga_context_menu.addAction(download_action)
         self.manga_context_menu.addSeparator()
@@ -151,11 +151,21 @@ class MangaSiteWidget(QWidget):
         self.chapter_context_menu.addSeparator()
 
         download_action = QAction(_('Download'), self)
-        download_action.triggered.connect(self.chapter_download_clicked)
+        download_action.triggered.connect(
+            lambda: self.start_thread_for_chapter(SingleChapterDownloadThread, _('Downloading {} chapters...'))
+        )
         self.chapter_context_menu.addAction(download_action)
 
-        convert_action = QAction(_('Save as PDF'), self)
-        convert_action.triggered.connect(self.chapter_convert_clicked)
+        save_action = QAction(_('Save on disk'), self)
+        save_action.triggered.connect(
+            lambda: self.start_thread_for_chapter(SingleChapterSaveThread, _('Saving {} chapters...'))
+        )
+        self.chapter_context_menu.addAction(save_action)
+
+        convert_action = QAction(_('Convert to PDF'), self)
+        convert_action.triggered.connect(
+            lambda: self.start_thread_for_chapter(SingleChapterConvertThread, _('Converting {} chapters...'))
+        )
         self.chapter_context_menu.addAction(convert_action)
         self.chapter_context_menu.addSeparator()
 
@@ -202,22 +212,13 @@ class MangaSiteWidget(QWidget):
         self.mangas_list.item(index).setSelected(True)
 
     # region Thread slots
-    def single_download_finished(self, string):
-        self.parent().show_msg_on_status_bar(string)
+    def single_thread_message(self, message):
+        self.parent().show_msg_on_status_bar(message)
         self.repaint_chapters()
 
-    def single_convert_finished(self, string):
-        self.parent().show_msg_on_status_bar(string)
-        self.repaint_chapters()
-
-    def download_finished(self, thread_name):
-        self.download_threads.pop(thread_name)
-        self.parent().show_msg_on_status_bar(_("Download finished"))
-        self.repaint_chapters()
-
-    def convert_finished(self, thread_name):
-        self.convert_threads.pop(thread_name)
-        self.parent().show_msg_on_status_bar(_("Convert finished"))
+    def group_of_threads_finished(self, thread_name):
+        self.threads.pop(thread_name)
+        self.parent().show_msg_on_status_bar(_("Job finished"))
         self.repaint_chapters()
     # endregion
 
@@ -229,27 +230,16 @@ class MangaSiteWidget(QWidget):
             chapter.clear_state()
         self.repaint_chapters()
 
-    def chapter_download_clicked(self):
+    def start_thread_for_chapter(self, single_thread_class, message):
         selected_chapters = self.chapters_list.selectedItems()
         chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
-        self.parent().show_msg_on_status_bar(_('Downloading {} chapters...').format(
+        self.parent().show_msg_on_status_bar(message.format(
             self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = DownloadThread(self.ddmd, self.single_download_finished, chapters)
-        self.download_threads[str(t)] = t
-        self.download_threads[str(t)].set_name(str(t))
-        self.download_threads[str(t)].signal.connect(self.download_finished)
-        self.download_threads[str(t)].start()
-
-    def chapter_convert_clicked(self):
-        selected_chapters = self.chapters_list.selectedItems()
-        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
-        self.parent().show_msg_on_status_bar(_('Converting {} chapters...').format(
-            self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = ConvertThread(self.ddmd, self.single_convert_finished, chapters)
-        self.convert_threads[str(t)] = t
-        self.convert_threads[str(t)].set_name(str(t))
-        self.convert_threads[str(t)].signal.connect(self.convert_finished)
-        self.convert_threads[str(t)].start()
+        t = GroupOfThreads(self.ddmd, single_thread_class, self.single_thread_message, chapters)
+        self.threads[str(t)] = t
+        t.set_name(str(t))
+        t.signal.connect(self.group_of_threads_finished)
+        t.start()
 
     def chapter_double_clicked(self, chapter_index):
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
@@ -314,9 +304,13 @@ class MangaSiteWidget(QWidget):
         try:
             self.parent().setDisabled(True)
             manga = self.ddmd.crawl_manga()
-            self.load_stored_chapters(manga)
         except Exception as e:
-            logger.warning(_('Could not refresh chapters, reason: {}').format(e))
+            logger.warning(_('Could not download chapters for {}, reason: {}').format(
+                self.ddmd.get_current_manga().title, e))
+            self.parent().show_msg_on_status_bar(_('Could not download chapters for {}').format(
+                self.ddmd.get_current_manga().title))
+        else:
+            self.load_stored_chapters(manga)
         finally:
             self.parent().setEnabled(True)
     # endregion
@@ -347,10 +341,11 @@ class MangaSiteWidget(QWidget):
         try:
             self.parent().setDisabled(True)
             site = self.ddmd.crawl_site()
-            self.load_stored_mangas(site)
         except Exception as e:
             logger.warning(_('Could not refresh site, reason: {}').format(e))
             self.parent().show_msg_on_status_bar(_('Could not refresh site, for more info look into log file.'))
+        else:
+            self.load_stored_mangas(site)
         finally:
             self.parent().setEnabled(True)
     # endregion
@@ -394,10 +389,8 @@ class MangaSiteWidget(QWidget):
         else:
             return
         for obj in list_object:
-            try:
-                shutil.rmtree(obj.get_download_path(base_path))
-            except FileNotFoundError:
-                logger.warning(_('Could not remove non-existent directory {}').format(obj.get_download_path(base_path)))
+            shutil.rmtree(obj.get_download_path(base_path), ignore_errors=True)
+            shutil.rmtree(obj.get_convert_path(base_path), ignore_errors=True)
 
     def apply_filter(self, text):
         self.filter_text = text
