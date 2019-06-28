@@ -1,7 +1,8 @@
 import sys
 sys.path.append('dokidokimd')
 
-from os.path import dirname, join, isfile, getsize
+from os import makedirs
+from os.path import dirname, join, isfile, getsize, isdir
 from tools.make_pdf import PDF
 
 
@@ -11,7 +12,10 @@ def test_make_pdf():
 
     pdf.add_dir(join(directory_name, 'images'))
 
-    pdf.make_pdf('test', join(directory_name, 'results', 'test_result.pdf'))
+    pdf_dir = join(directory_name, 'results')
+    if not isdir(pdf_dir):
+        makedirs(pdf_dir, exist_ok=True)
+    pdf.make_pdf('test', join(pdf_dir, 'test_result.pdf'))
 
     assert isfile(join(directory_name, 'results', 'test_result.pdf')) is True
     assert getsize(join(directory_name, 'results', 'test_result.pdf')) > 0

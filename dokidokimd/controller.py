@@ -214,6 +214,8 @@ class DDMDController:
             logger.warning(_('Could not convert to PDF, source path with images does not exist'))
             return False, pdf_dir
         try:
+            if not isdir(pdf_dir):
+                makedirs(pdf_dir, exist_ok=True)
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_dir(images_dir)

@@ -7,6 +7,8 @@ stages:
 install:
   - pip install -r requirements.txt
   - pip install PyInstaller
+  - pip install setuptools
+  - pip install pytest
   - python setup.py install
 
 jobs:
@@ -20,6 +22,6 @@ jobs:
       script: python setup.py build sdist bdist
 
     - stage: test
-      script: python tests/functional/test_create_pdf_from_jpegs/test_make_pdf.py
+      script: pytest
 
 
