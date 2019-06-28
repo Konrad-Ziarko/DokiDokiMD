@@ -20,9 +20,9 @@ class GUI(QMainWindow):
         super(GUI, self).__init__()
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
-        self.controller = DDMDController()
         self.config = ConfigManager()
         self.config.read_config()
+        self.controller = DDMDController(self.config)
         self.title = title
         self.setWindowTitle(self.title)
         self.main_widget = MangaSiteWidget(self, self.controller)
@@ -63,7 +63,7 @@ class GUI(QMainWindow):
         dark_mode.setChecked(self.config.dark_mode)
 
     def set_dark_style(self, is_checked):
-        self.config.set_dark_mode(is_checked)
+        self.config.dark_mode = is_checked
         if is_checked:
             p = self.qt_app.palette()
             p.setColor(QPalette.Window, QCOLOR_DARK)
@@ -85,7 +85,7 @@ class GUI(QMainWindow):
         self.config.write_config()
 
     def change_sot(self, is_checked):
-        self.config.set_sot(is_checked)
+        self.config.sot = is_checked
         flags = QtCore.Qt.WindowFlags()
         hint = QtCore.Qt.WindowStaysOnTopHint
         if is_checked:

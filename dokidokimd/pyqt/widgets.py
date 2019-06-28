@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
-    QListWidgetItem, QLineEdit
+    QListWidgetItem, QLineEdit, QProgressBar
 
 from consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
 from controller import DDMDController
@@ -45,6 +45,7 @@ class MangaSiteWidget(QWidget):
         vbox_right = QVBoxLayout(self)
         search_hbox = QHBoxLayout()
         hbox.addLayout(vbox_right)
+        self.setLayout(hbox)
 
         self.combo_box_sites = QComboBox()
         btn_crawl_site = QPushButton(parent=self)
@@ -90,6 +91,7 @@ class MangaSiteWidget(QWidget):
             )
         )
         vbox_left.addWidget(self.mangas_list)
+        vbox_left.setStretch()
         # endregion
 
         # region textbox for manga filter
@@ -98,7 +100,7 @@ class MangaSiteWidget(QWidget):
         self.filter_mangas_textbox.textChanged.connect(
             lambda: self.apply_filter(self.filter_mangas_textbox.text())
         )
-        vbox_left.addWidget(self.filter_mangas_textbox)
+        #vbox_left.addWidget(self.filter_mangas_textbox)
         # endregion
 
         # region list widget for manga chapters
@@ -106,7 +108,7 @@ class MangaSiteWidget(QWidget):
             lambda: self.chapter_double_clicked(self.chapters_list.currentRow())
         )
         self.chapters_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        hbox.addWidget(self.chapters_list)
+        vbox_right.addWidget(self.chapters_list)
         self.chapters_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.chapters_list.customContextMenuRequested.connect(
             lambda: self.chapter_context_menu.exec_(QCursor.pos())
@@ -197,8 +199,6 @@ class MangaSiteWidget(QWidget):
         )
         self.chapter_context_menu.addAction(remove_from_disk)
         # endregion
-
-        self.setLayout(hbox)
 
     def repaint_chapters(self):
         indexes = [idx.row() for idx in self.chapters_list.selectedIndexes()]

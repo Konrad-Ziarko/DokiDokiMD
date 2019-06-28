@@ -6,6 +6,7 @@ from sys import platform
 from typing import List, Dict, Tuple, Union
 
 from manga_site import load_dumped_site, MangaSite, Chapter, Manga
+from tools.config import ConfigManager
 from tools.crawlers.base_crawler import BaseCrawler
 from tools.crawlers.kissmanga import KissMangaCrawler
 from tools.crawlers.mangapanda import MangaPandaCrawler
@@ -40,7 +41,9 @@ def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
 
 
 class DDMDController:
-    def __init__(self) -> None:
+    def __init__(self, config) -> None:
+        self._config = config                                       # type: ConfigManager
+
         self.downloaded_pages = 0                                   # type: int
         self.downloaded_chapters = 0                                # type: int
         self.converted_chapters = 0                                 # type: int
@@ -50,8 +53,11 @@ class DDMDController:
         self.cwd_chapter = None                                     # type: Chapter
         self.cwd_page = -1                                          # type: int
 
-        self.working_dir = getcwd()                                 # type: str
-        self.sites_location = join(self.working_dir, 'sites')  # type: str
+        self.start_dir = getcwd()                                   # type: str
+        self.working_dir = self._config.db_path                     # type: str
+        if self.working_dir == '':
+            self.working_dir = self.start_dir
+        self.sites_location = join(self.working_dir, 'sites')       # type: str
 
         self.manga_sites = []                                       # type: List[MangaSite]
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
@@ -61,6 +67,15 @@ class DDMDController:
             for site, crawler in MangaCrawlers.items():
                 if site not in current_sites:
                     self.manga_sites.append(MangaSite(site))
+
+    @property
+    def working_dir(self):
+        return self._working_dir
+
+    @working_dir.setter
+    def working_dir(self, path: str):
+        self._working_dir = path
+        self._config.db_path = path
 
     def _reset_cwd(self):
         self.cwd_chapter = self.cwd_manga = self.cwd_site = self.cwd_page = None
