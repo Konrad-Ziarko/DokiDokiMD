@@ -16,7 +16,7 @@ DokiDoki Manga Downloader is a software that helps you manage and download manga
 It is able to convert downloaded images(regardles of orientation) into single pdf file, ready to read.
 
 # What is required?
-Python 3.6 or greater.
+Python 3.5 or greater.
 
 ## Overview
 Data downloaded by the program is stored in a files. Each site has its own file (database).
