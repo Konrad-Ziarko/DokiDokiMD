@@ -1,5 +1,6 @@
 import pickle
 import re
+from os.path import join
 from typing import List
 
 from tools.kz_logger import get_logger
@@ -11,12 +12,6 @@ logger = get_logger(__name__)
 path_safe_regex = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]'~@]+"
 path_safe_replace_char = r'_'
 compiled_regex = re.compile(path_safe_regex, re.UNICODE)
-
-available_sites = {
-    'Mangareader': 'https://www.mangareader.net',
-    'MangaPanda': 'https://www.mangapanda.com/',
-    'KissManga': 'http://kissmanga.com/',
-}
 
 
 def load_dumped_site(dump_object):
@@ -43,6 +38,13 @@ class Chapter:
         self.downloaded = False
         self.in_memory = False
         self.converted = False
+
+    def get_download_path(self, base_path: str) -> str:
+        return join(base_path, 'downloaded', self.manga_ref.site_ref.site_name,
+                    self.manga_ref.get_path_safe_title(), self.get_path_safe_title())
+
+    def get_convert_path(self, base_path: str) -> str:
+        return join(base_path, 'converted', self.manga_ref.site_ref.site_name, self.manga_ref.get_path_safe_title())
 
     def get_path_safe_title(self) -> str:
         return compiled_regex.sub(path_safe_replace_char, self.title)
@@ -87,7 +89,17 @@ class Manga:
         self.summary = None         # type: str
         self.chapters = []          # type: List[Chapter]
 
-        self.downloaded = False  # type: bool
+        self.downloaded = False     # type: bool
+
+    def clear_state(self):
+        self.chapters = []
+        self.downloaded = False
+
+    def get_download_path(self, base_path: str) -> str:
+        return join(base_path, 'downloaded', self.site_ref.site_name, self.get_path_safe_title())
+
+    def get_convert_path(self, base_path: str) -> str:
+        return join(base_path, 'converted', self.site_ref.site_name, self.get_path_safe_title())
 
     def get_path_safe_title(self) -> str:
         return compiled_regex.sub(path_safe_replace_char, self.title)
@@ -119,6 +131,9 @@ class MangaSite:
         self.site_name = site_name      # type: str
         self.url = None                 # type: str
         self.mangas = []                # type: List[Manga]
+
+    def clear_state(self):
+        self.mangas = []
 
     def add_manga(self, manga) -> None:
         manga.site_ref = self

@@ -23,7 +23,7 @@ Data downloaded by the program is stored in a files. Each site has its own file 
 <br>
 Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](dokidokimd/manga_site.py) to see what is stored.
 
-## Issue
+## Issues
 To post any issue use available issue templates:
 - [BUG](.github/ISSUE_TEMPLATE/bug_report.md)
 - [FEATURE](.github/ISSUE_TEMPLATE/feature_request.md)
