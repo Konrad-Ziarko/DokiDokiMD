@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 from os import walk
 from os.path import dirname, abspath, join
-
-from setuptools import setup
+from setuptools import setup, find_packages
 
 name = 'dokidokimd'
 
@@ -32,7 +31,9 @@ setup(
     author_email='konrad.ziarko@protonmail.ch',
     url='https://github.com/Konrad-Ziarko/DokiDokiMD',
     download_url='https://github.com/Konrad-Ziarko/DokiDokiMD/archive/v{0}.zip'.format(VERSION),
-    packages=['dokidokimd'],
+    package_dir={'': name},
+    packages=find_packages(name, exclude=['sites']),
+
     package_data={'': package_files()},
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
