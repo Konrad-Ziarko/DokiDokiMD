@@ -9,10 +9,17 @@ install:
   - pip install pytest
   - python setup.py install
 
-jobs:
+os:
+  - windows
+  - linux
+
+matrix:
   include:
     - python: 3.5
     - python: 3.6
+
+    - os: windows
+      script: python installer/installer.py
 
     - stage: setup
       script: python setup.py build sdist bdist
