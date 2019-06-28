@@ -1,8 +1,6 @@
 language: python
 stages:
-- make_exe
 - setup
-- test
 
 install:
   - pip install -r requirements.txt
@@ -15,13 +13,10 @@ jobs:
   include:
     - python: 3.5
     - python: 3.6
-    - stage: make_exe
-      script: python installer/installer.py
 
     - stage: setup
       script: python setup.py build sdist bdist
 
-    - stage: test
-      script: pytest
+script: pytest
 
 
