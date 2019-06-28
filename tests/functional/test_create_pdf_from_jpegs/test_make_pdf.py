@@ -1,5 +1,7 @@
-from os.path import dirname, join, isfile, getsize
+import sys
+sys.path.append('dokidokimd')
 
+from os.path import dirname, join, isfile, getsize
 from tools.make_pdf import PDF
 
 
