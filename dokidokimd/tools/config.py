@@ -11,9 +11,10 @@ class ConfigManager(object):
         self.config_path = 'ddmd.ini'
         self.config = configparser.ConfigParser()
 
-        self._sot = None                # type: bool
-        self._dark_mode = None          # type: bool
+        self._sot = False               # type: bool
+        self._dark_mode = False         # type: bool
         self._db_path = ''              # type: str
+        self._max_threads = 10          # type: int
         try:
             self.config.read(self.config_path)
             if not self.config.has_section('Window'):
@@ -49,19 +50,32 @@ class ConfigManager(object):
         self.config.set('Manga', 'db_path', db_path)
         self._db_path = db_path
 
+    @property
+    def max_threads(self):
+        return self._max_threads
+
+    @max_threads.setter
+    def max_threads(self, max_threads: int):
+        self.config.set('Manga', 'max_threads', str(max_threads))
+        self._max_threads = max_threads
+
     def read_config(self):
         try:
             self.sot = self.config.getboolean('Window', 'stay_on_top')
-        except configparser.NoOptionError:
+        except (configparser.NoOptionError, ValueError):
             self.sot = False
         try:
             self.dark_mode = self.config.getboolean('Window', 'dark_mode')
-        except configparser.NoOptionError:
+        except (configparser.NoOptionError, ValueError):
             self.dark_mode = False
         try:
             self.db_path = self.config.get('Manga', 'db_path')
-        except configparser.NoOptionError:
+        except (configparser.NoOptionError, ValueError):
             self.db_path = ''
+        try:
+            self.max_threads = self.config.getint('Manga', 'max_threads')
+        except (configparser.NoOptionError, ValueError):
+            self.max_threads = 10
 
     def write_config(self):
         with open(self.config_path, 'w') as configfile:

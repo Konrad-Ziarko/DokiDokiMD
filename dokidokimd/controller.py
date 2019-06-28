@@ -42,7 +42,7 @@ def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
 
 class DDMDController:
     def __init__(self, config) -> None:
-        self._config = config                                       # type: ConfigManager
+        self.config = config                                        # type: ConfigManager
 
         self.downloaded_pages = 0                                   # type: int
         self.downloaded_chapters = 0                                # type: int
@@ -54,7 +54,7 @@ class DDMDController:
         self.cwd_page = -1                                          # type: int
 
         self.start_dir = getcwd()                                   # type: str
-        self.working_dir = self._config.db_path                     # type: str
+        self.working_dir = self.config.db_path                      # type: str
         if self.working_dir == '':
             self.working_dir = self.start_dir
         self.sites_location = join(self.working_dir, 'sites')       # type: str
@@ -75,7 +75,7 @@ class DDMDController:
     @working_dir.setter
     def working_dir(self, path: str):
         self._working_dir = path
-        self._config.db_path = path
+        self.config.db_path = path
 
     def _reset_cwd(self):
         self.cwd_chapter = self.cwd_manga = self.cwd_site = self.cwd_page = None

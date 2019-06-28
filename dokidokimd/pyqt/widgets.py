@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
-    QListWidgetItem, QLineEdit, QProgressBar
+    QListWidgetItem, QLineEdit, QProgressBar, QProgressDialog, QStyleOptionProgressBar
 
 from consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
 from controller import DDMDController
@@ -39,13 +39,22 @@ class MangaSiteWidget(QWidget):
         self.filter_text = ''                           # type: str
         self.threads = dict()                           # type: Dict
 
-        hbox = QHBoxLayout(self)
-        vbox_left = QVBoxLayout()
-        hbox.addLayout(vbox_left)
-        vbox_right = QVBoxLayout()
-        search_hbox = QHBoxLayout()
-        hbox.addLayout(vbox_right)
-        self.setLayout(hbox)
+        root_layout = QVBoxLayout(self)
+        top_part_of_root = QHBoxLayout()
+        middle_part_of_root = QHBoxLayout()
+        bottom_part_of_root = QHBoxLayout()
+
+        root_layout.addLayout(top_part_of_root)
+        root_layout.addLayout(middle_part_of_root)
+        root_layout.addLayout(bottom_part_of_root)
+
+        left_part_of_top = QVBoxLayout()
+        right_part_of_top = QVBoxLayout()
+        top_part_of_root.addLayout(left_part_of_top)
+        top_part_of_root.addLayout(right_part_of_top)
+        search_part = QHBoxLayout()
+        left_part_of_top.addLayout(search_part)
+        self.setLayout(root_layout)
 
         self.combo_box_sites = QComboBox()
         btn_crawl_site = QPushButton()
@@ -60,23 +69,30 @@ class MangaSiteWidget(QWidget):
         for idx, site in enumerate(self.ddmd.get_sites()):
             self.combo_box_sites.addItem('{}:{}({})'.format(idx, site.site_name, len(site.mangas)), site)
         self.combo_box_sites.setMaximumWidth(self.combo_box_sites.sizeHint().width())
-        vbox_left.addLayout(search_hbox)
-        search_hbox.addWidget(self.combo_box_sites)
+        search_part.addWidget(self.combo_box_sites)
+        # endregion
+
+        # region progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(0)
+        right_part_of_top.addWidget(self.progress_bar)
         # endregion
 
         # region button for search manga site
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
         btn_crawl_site.clicked.connect(self.update_mangas)
         btn_crawl_site.setIcon(QIcon('../icons/baseline_search_black_18dpx2.png'))
-        search_hbox.addWidget(btn_crawl_site)
-        search_hbox.setAlignment(QtCore.Qt.AlignLeft)
+        search_part.addWidget(btn_crawl_site)
+        search_part.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
 
         # region textbox for manga filter
         self.filter_mangas_textbox.setToolTip(_('Filter'))
         self.filter_mangas_textbox.setPlaceholderText(_('Search manga...'))
         self.filter_mangas_textbox.textChanged.connect(self.apply_filter)
-        vbox_left.addWidget(self.filter_mangas_textbox)
+        middle_part_of_root.addWidget(self.filter_mangas_textbox)
         # endregion
 
         # region list widget for mangas
@@ -89,17 +105,17 @@ class MangaSiteWidget(QWidget):
                 self.manga_context_menu.exec_(QCursor.pos())
             )
         )
-        vbox_left.addWidget(self.mangas_list)
+        bottom_part_of_root.addWidget(self.mangas_list)
         # endregion
 
         # region list widget for manga chapters
         self.chapters_list.doubleClicked.connect(self.chapter_double_clicked)
         self.chapters_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        vbox_right.addWidget(self.chapters_list)
         self.chapters_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.chapters_list.customContextMenuRequested.connect(
             lambda: self.chapter_context_menu.exec_(QCursor.pos())
         )
+        bottom_part_of_root.addWidget(self.chapters_list)
         # endregion
 
         # region Manga contextmenu
@@ -205,7 +221,7 @@ class MangaSiteWidget(QWidget):
 
     def group_of_threads_finished(self, thread_name):
         self.threads.pop(thread_name)
-        self.parent().show_msg_on_status_bar(_("Job finished"))
+        self.parent().show_msg_on_status_bar(_('Job finished'))
         self.repaint_chapters()
     # endregion
 
@@ -220,12 +236,15 @@ class MangaSiteWidget(QWidget):
     def start_thread_for_chapter(self, single_thread_class, message):
         selected_chapters = self.chapters_list.selectedItems()
         chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+        self.add_to_progress_max(len(chapters))
         self.parent().show_msg_on_status_bar(message.format(
             self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = GroupOfThreads(self.ddmd, single_thread_class, self.single_thread_message, chapters)
+        t = GroupOfThreads(self.ddmd, single_thread_class, self.single_thread_message, chapters, self.add_progress,
+                           self.ddmd.config.max_threads)
         self.threads[str(t)] = t
         t.set_name(str(t))
-        t.signal.connect(self.group_of_threads_finished)
+        t.message.connect(self.group_of_threads_finished)
+        t.finished.connect(self.remove_from_progress_max)
         t.start()
 
     def chapter_double_clicked(self):
@@ -339,6 +358,26 @@ class MangaSiteWidget(QWidget):
             self.load_stored_mangas(site)
         finally:
             self.parent().setEnabled(True)
+    # endregion
+
+    # region progress bar actions
+    def add_progress(self):
+        self.progress_bar.setValue(self.progress_bar.value()+1)
+
+    def add_to_progress_max(self, value: int):
+        self.progress_bar.setMaximum(self.progress_bar.maximum() + value)
+
+    def remove_from_progress_max(self, value: int):
+        self.progress_bar.setMaximum(max(0, self.progress_bar.maximum() - value))
+
+    def set_progress(self, value: int):
+        self.progress_bar.setValue(value)
+
+    def set_progress_max(self, value: int):
+        self.progress_bar.setMaximum(value)
+
+    def clear_progress(self):
+        self.progress_bar.setValue(0)
     # endregion
 
     def open_file_explorer(self, level: str):
