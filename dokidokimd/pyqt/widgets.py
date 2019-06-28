@@ -40,15 +40,15 @@ class MangaSiteWidget(QWidget):
         self.threads = dict()                           # type: Dict
 
         hbox = QHBoxLayout(self)
-        vbox_left = QVBoxLayout(self)
+        vbox_left = QVBoxLayout()
         hbox.addLayout(vbox_left)
-        vbox_right = QVBoxLayout(self)
+        vbox_right = QVBoxLayout()
         search_hbox = QHBoxLayout()
         hbox.addLayout(vbox_right)
         self.setLayout(hbox)
 
         self.combo_box_sites = QComboBox()
-        btn_crawl_site = QPushButton(parent=self)
+        btn_crawl_site = QPushButton()
         self.mangas_list = ListWidget(_('No mangas'))
         self.filter_mangas_textbox = QLineEdit()
         self.chapters_list = ListWidget(_('No chapters'))
@@ -56,9 +56,7 @@ class MangaSiteWidget(QWidget):
         self.chapter_context_menu = QtWidgets.QMenu()
 
         # region combobox for manga sites
-        self.combo_box_sites.currentIndexChanged.connect(
-            lambda: self.site_selected(self.combo_box_sites.currentIndex())
-        )
+        self.combo_box_sites.activated.connect(self.site_selected)
         for idx, site in enumerate(self.ddmd.get_sites()):
             self.combo_box_sites.addItem('{}:{}({})'.format(idx, site.site_name, len(site.mangas)), site)
         self.combo_box_sites.setMaximumWidth(self.combo_box_sites.sizeHint().width())
@@ -68,45 +66,34 @@ class MangaSiteWidget(QWidget):
 
         # region button for search manga site
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
-        btn_crawl_site.clicked.connect(
-            lambda: self.update_mangas()
-        )
+        btn_crawl_site.clicked.connect(self.update_mangas)
         btn_crawl_site.setIcon(QIcon('../icons/baseline_search_black_18dpx2.png'))
         search_hbox.addWidget(btn_crawl_site)
         search_hbox.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
 
+        # region textbox for manga filter
+        self.filter_mangas_textbox.setToolTip(_('Filter'))
+        self.filter_mangas_textbox.setPlaceholderText(_('Search manga...'))
+        self.filter_mangas_textbox.textChanged.connect(self.apply_filter)
+        vbox_left.addWidget(self.filter_mangas_textbox)
+        # endregion
+
         # region list widget for mangas
-        self.mangas_list.doubleClicked.connect(
-            lambda: self.manga_double_clicked(self.mangas_list.currentRow())
-        )
-        self.mangas_list.clicked.connect(
-            lambda: self.manga_selected(self.mangas_list.currentRow())
-        )
+        self.mangas_list.doubleClicked.connect(self.manga_double_clicked)
+        self.mangas_list.clicked.connect(self.manga_selected)
         self.mangas_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.mangas_list.customContextMenuRequested.connect(
             lambda: (
-                self.manga_selected(self.mangas_list.currentRow()),
+                self.manga_selected(),
                 self.manga_context_menu.exec_(QCursor.pos())
             )
         )
         vbox_left.addWidget(self.mangas_list)
-        vbox_left.setStretch()
-        # endregion
-
-        # region textbox for manga filter
-        self.filter_mangas_textbox.setToolTip(_('Filter'))
-        self.filter_mangas_textbox.setPlaceholderText(_('Search manga...'))
-        self.filter_mangas_textbox.textChanged.connect(
-            lambda: self.apply_filter(self.filter_mangas_textbox.text())
-        )
-        #vbox_left.addWidget(self.filter_mangas_textbox)
         # endregion
 
         # region list widget for manga chapters
-        self.chapters_list.doubleClicked.connect(
-            lambda: self.chapter_double_clicked(self.chapters_list.currentRow())
-        )
+        self.chapters_list.doubleClicked.connect(self.chapter_double_clicked)
         self.chapters_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         vbox_right.addWidget(self.chapters_list)
         self.chapters_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -241,7 +228,8 @@ class MangaSiteWidget(QWidget):
         t.signal.connect(self.group_of_threads_finished)
         t.start()
 
-    def chapter_double_clicked(self, chapter_index):
+    def chapter_double_clicked(self):
+        chapter_index = self.chapters_list.currentRow()
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_chapter(chapter)
         self.chapter_download_clicked()
@@ -271,10 +259,12 @@ class MangaSiteWidget(QWidget):
     def manga_download_clicked(self):
         self.download_manga(self.mangas_list.currentRow())
 
-    def manga_double_clicked(self, manga_index):
+    def manga_double_clicked(self):
+        manga_index = self.mangas_list.currentRow()
         self.download_manga(manga_index)
 
-    def manga_selected(self, manga_index):
+    def manga_selected(self):
+        manga_index = self.mangas_list.currentRow()
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_manga(manga)
         self.load_stored_chapters()
@@ -316,7 +306,8 @@ class MangaSiteWidget(QWidget):
     # endregion
 
     # region site_combobox actions
-    def site_selected(self, site_index):
+    def site_selected(self):
+        site_index = self.combo_box_sites.currentIndex()
         site = self.combo_box_sites.itemData(site_index, QtCore.Qt.UserRole)
         self.ddmd.set_cwd_site(site)
         self.load_stored_mangas()
@@ -392,6 +383,6 @@ class MangaSiteWidget(QWidget):
             shutil.rmtree(obj.get_download_path(base_path), ignore_errors=True)
             shutil.rmtree(obj.get_convert_path(base_path), ignore_errors=True)
 
-    def apply_filter(self, text):
-        self.filter_text = text
+    def apply_filter(self):
+        self.filter_text = self.filter_mangas_textbox.text()
         self.load_stored_mangas()
