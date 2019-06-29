@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 name = 'dokidokimd'
 
 DIR = join(dirname(abspath(__file__)), name)
-VERSION = '0.3.0'
+VERSION = '1.0.0'
 
 with open(join(dirname(abspath(__file__)), 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
