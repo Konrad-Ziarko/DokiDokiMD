@@ -3,7 +3,7 @@ import sys
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPalette
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QMenu
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QMenu, QFileDialog
 
 from consts import QCOLOR_DARK, QCOLOR_HIGHLIGHT, QCOLOR_WHITE
 from controller import DDMDController
@@ -36,19 +36,27 @@ class GUI(QMainWindow):
 
     def init_menu_bar(self):
         menu_bar = self.menuBar()
-        # TODO
         file_menu = menu_bar.addMenu(_('File'))
         options_menu = menu_bar.addMenu(_('Options'))
-        imp_menu = QMenu('Import', self)
-        # imp_menu.triggered.connect(lambda: print('asd'))
-        imp_act = QAction('Import sub', self)
-        imp_act.triggered.connect(lambda: print('test'))
-        imp_menu.addAction(imp_act)
-        new_act = QAction('New', self)
-        new_act.triggered.connect(lambda: print('test'))
-        file_menu.addAction(new_act)
-        file_menu.addMenu(imp_menu)
-        # TODO END
+        manga_menu = QMenu(_('Manga DB'), self)
+        file_menu.addMenu(manga_menu)
+
+        save_act = QAction(_('Save '), self)
+        save_act.triggered.connect(
+            lambda: (
+                self.controller.store_sites(),
+                self.show_msg_on_status_bar(_('DB saved to {}').format(self.config.db_path))
+            )
+        )
+        manga_menu.addAction(save_act)
+
+        imp_act = QAction(_('Import'), self)
+        imp_act.triggered.connect(self.import_db)
+        manga_menu.addAction(imp_act)
+
+        relocate_act = QAction(_('Relocate'), self)
+        relocate_act.triggered.connect(self.relocate_db)
+        manga_menu.addAction(relocate_act)
 
         aot_menu = QAction(_('Stay on top'), self)
         aot_menu.setCheckable(True)
@@ -61,6 +69,21 @@ class GUI(QMainWindow):
         dark_mode.triggered.connect(lambda: self.set_dark_style(dark_mode.isChecked()))
         options_menu.addAction(dark_mode)
         dark_mode.setChecked(self.config.dark_mode)
+
+    def relocate_db(self):
+        path = str(QFileDialog.getExistingDirectory(self, _('Select Directory')))
+        if path:
+            self.config.db_path = path
+            self.controller.store_sites()
+
+    def import_db(self):
+        path = str(QFileDialog.getExistingDirectory(self, _('Select Directory')))
+        if path:
+            self.config.db_path = path
+            self.controller.load_db()
+            self.main_widget = MangaSiteWidget(self, self.controller)
+            self.setCentralWidget(self.main_widget)
+            self.show_msg_on_status_bar(_('Loaded DB from {}').format(self.config.db_path))
 
     def set_dark_style(self, is_checked):
         self.config.dark_mode = is_checked

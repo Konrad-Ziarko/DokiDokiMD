@@ -54,13 +54,15 @@ class DDMDController:
         self.cwd_page = -1                                          # type: int
 
         self.start_dir = getcwd()                                   # type: str
-        self.working_dir = self.config.db_path                      # type: str
-        if self.working_dir == '':
-            self.working_dir = self.start_dir
-        self.sites_location = join(self.working_dir, 'sites')       # type: str
-
+        if self.sites_location == '':
+            self.sites_location = join(self.start_dir, 'sites')
         self.manga_sites = []                                       # type: List[MangaSite]
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
+        self.load_db()
+
+    def load_db(self):
+        self.manga_sites = []
+        self.crawlers = {}
         self.load_sites()
         if len(self.manga_sites) == 0 or len(self.manga_sites) != len(MangaCrawlers.items()):
             current_sites = [site.site_name for site in self.manga_sites]
@@ -69,12 +71,11 @@ class DDMDController:
                     self.manga_sites.append(MangaSite(site))
 
     @property
-    def working_dir(self):
-        return self._working_dir
+    def sites_location(self):
+        return self.config.db_path
 
-    @working_dir.setter
-    def working_dir(self, path: str):
-        self._working_dir = path
+    @sites_location.setter
+    def sites_location(self, path: str):
         self.config.db_path = path
 
     def _reset_cwd(self):
