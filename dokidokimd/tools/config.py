@@ -31,6 +31,7 @@ class ConfigManager(object):
     def sot(self, sot: bool):
         self.config.set('Window', 'stay_on_top', str(sot))
         self._sot = sot
+        self.write_config()
 
     @property
     def dark_mode(self):
@@ -40,6 +41,7 @@ class ConfigManager(object):
     def dark_mode(self, dark_mode: bool):
         self.config.set('Window', 'dark_mode', str(dark_mode))
         self._dark_mode = dark_mode
+        self.write_config()
 
     @property
     def db_path(self):
@@ -49,6 +51,7 @@ class ConfigManager(object):
     def db_path(self, db_path: str):
         self.config.set('Manga', 'db_path', db_path)
         self._db_path = db_path
+        self.write_config()
 
     @property
     def max_threads(self):
@@ -58,6 +61,7 @@ class ConfigManager(object):
     def max_threads(self, max_threads: int):
         self.config.set('Manga', 'max_threads', str(max_threads))
         self._max_threads = max_threads
+        self.write_config()
 
     def read_config(self):
         try:
