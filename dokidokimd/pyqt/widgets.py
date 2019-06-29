@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
-    QListWidgetItem, QLineEdit, QProgressBar, QProgressDialog, QStyleOptionProgressBar
+    QListWidgetItem, QLineEdit, QProgressBar
 
 from consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
 from controller import DDMDController
@@ -201,6 +201,8 @@ class MangaSiteWidget(QWidget):
             lambda: self.remove_from_disk('C')
         )
         self.chapter_context_menu.addAction(remove_from_disk)
+
+        self.site_selected()
         # endregion
 
     def repaint_chapters(self):
@@ -223,6 +225,7 @@ class MangaSiteWidget(QWidget):
         self.threads.pop(thread_name)
         self.parent().show_msg_on_status_bar(_('Job finished'))
         self.repaint_chapters()
+
     # endregion
 
     # region chapters_list actions
@@ -251,7 +254,7 @@ class MangaSiteWidget(QWidget):
         chapter_index = self.chapters_list.currentRow()
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_chapter(chapter)
-        self.chapter_download_clicked()
+        self.start_thread_for_chapter(SingleChapterDownloadThread, _('Downloading {} chapters...'))
 
     def mark_as_downloaded(self):
         selected_chapters = self.chapters_list.selectedItems()
@@ -266,6 +269,7 @@ class MangaSiteWidget(QWidget):
         for chapter in chapters:
             chapter.converted = True
         self.repaint_chapters()
+
     # endregion
 
     # region manga_list actions
@@ -322,6 +326,7 @@ class MangaSiteWidget(QWidget):
             self.load_stored_chapters(manga)
         finally:
             self.parent().setEnabled(True)
+
     # endregion
 
     # region site_combobox actions
@@ -358,11 +363,12 @@ class MangaSiteWidget(QWidget):
             self.load_stored_mangas(site)
         finally:
             self.parent().setEnabled(True)
+
     # endregion
 
     # region progress bar actions
     def add_progress(self):
-        self.progress_bar.setValue(self.progress_bar.value()+1)
+        self.progress_bar.setValue(self.progress_bar.value() + 1)
 
     def add_to_progress_max(self, value: int):
         self.progress_bar.setMaximum(self.progress_bar.maximum() + value)
@@ -378,6 +384,7 @@ class MangaSiteWidget(QWidget):
 
     def clear_progress(self):
         self.progress_bar.setValue(0)
+
     # endregion
 
     def open_file_explorer(self, level: str):

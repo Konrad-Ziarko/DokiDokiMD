@@ -8,9 +8,7 @@ from typing import List, Dict, Tuple, Union
 from manga_site import load_dumped_site, MangaSite, Chapter, Manga
 from tools.config import ConfigManager
 from tools.crawlers.base_crawler import BaseCrawler
-from tools.crawlers.kissmanga import KissMangaCrawler
-from tools.crawlers.mangapanda import MangaPandaCrawler
-from tools.crawlers.mangareader import MangareaderCrawler
+from tools.crawlers.crawlers import MangaCrawlersMap
 from tools.kz_logger import get_logger
 from tools.make_pdf import PDF
 from tools.translator import translate as _
@@ -22,19 +20,9 @@ elif platform == 'win32':
 
 logger = get_logger(__name__)
 
-MangaCrawlers = {
-    'Mangareader': MangareaderCrawler,
-    'MangaPanda': MangaPandaCrawler,
-    'KissManga': KissMangaCrawler,
-}
-
-
-def available_sites():
-    return MangaCrawlers.keys()
-
 
 def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
-    for name, crawler in MangaCrawlers.items():
+    for name, crawler in MangaCrawlersMap.items():
         if name.lower() in site_name.lower():
             return crawler()
     return None
@@ -64,9 +52,9 @@ class DDMDController:
         self.manga_sites = []
         self.crawlers = {}
         self.load_sites()
-        if len(self.manga_sites) == 0 or len(self.manga_sites) != len(MangaCrawlers.items()):
+        if len(self.manga_sites) == 0 or len(self.manga_sites) != len(MangaCrawlersMap.items()):
             current_sites = [site.site_name for site in self.manga_sites]
-            for site, crawler in MangaCrawlers.items():
+            for site, crawler in MangaCrawlersMap.items():
                 if site not in current_sites:
                     self.manga_sites.append(MangaSite(site))
 
@@ -163,9 +151,9 @@ class DDMDController:
         raise NotImplementedError
 
     def add_site(self, site_name: str) -> (bool, str):
-        sites = [x.lower() for x in MangaCrawlers.keys()]
+        sites = [x.lower() for x in MangaCrawlersMap.keys()]
         if site_name.lower() in sites:
-            name, = [x for x in MangaCrawlers.keys() if site_name.lower() == x.lower()]
+            name, = [x for x in MangaCrawlersMap.keys() if site_name.lower() == x.lower()]
             self.manga_sites.append(MangaSite(name))
             return True, name
         return False, site_name
@@ -220,7 +208,7 @@ class DDMDController:
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_dir(images_dir)
-            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
+            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title() + '.pdf'))
             chapter.converted = True
             self.converted_chapters += 1
         except Exception as e:
@@ -239,7 +227,7 @@ class DDMDController:
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_chapter(chapter)
-            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title()+'.pdf'))
+            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title() + '.pdf'))
             chapter.converted = True
             self.converted_chapters += 1
         except Exception as e:

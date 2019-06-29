@@ -104,13 +104,19 @@ class Manga:
     def get_path_safe_title(self) -> str:
         return compiled_regex.sub(path_safe_replace_char, self.title)
 
-    def add_chapter(self, chapter) -> None:
+    def add_chapter(self, chapter, reverse=False) -> None:
         chapter.manga_ref = self
         if self.chapters is None:
             self.chapters = list()
-            self.chapters.append(chapter)
+            if reverse:
+                self.chapters.insert(0, chapter)
+            else:
+                self.chapters.append(chapter)
         elif chapter.url not in [x.url for x in self.chapters if x.url == chapter.url]:
-            self.chapters.append(chapter)
+            if reverse:
+                self.chapters.insert(0, chapter)
+            else:
+                self.chapters.append(chapter)
 
     def dump(self):
         return pickle.dumps(self)

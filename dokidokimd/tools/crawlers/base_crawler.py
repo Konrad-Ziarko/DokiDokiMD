@@ -1,20 +1,21 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from manga_site import MangaSite, Manga, Chapter
 
 
 class BaseCrawler:
+    __metaclass__ = ABCMeta
     @abstractmethod
     def crawl_index(self, manga_site: MangaSite) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def crawl_detail(self, manga: Manga) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def download(self, chapter: Chapter) -> int:
         """
         :return: number of downloaded pages
         """
-        pass
+        raise NotImplementedError
