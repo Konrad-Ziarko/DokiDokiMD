@@ -18,8 +18,8 @@ logger = get_logger(__name__)
 class PDF:
     def __init__(self) -> None:
         self.pages_binary = list()  # type: List[bytes]
-        self.files_list = list()  # type: List[str]
-        self.builder = None  # type: Canvas
+        self.files_list = list()    # type: List[str]
+        self.builder = None         # type: Canvas
 
     def clear_pages(self) -> None:
         self.pages_binary = list()
@@ -34,7 +34,8 @@ class PDF:
             self.files_list.insert(index, image_path)
 
     def add_dir(self, dir_path: str, extension_filter: str = None) -> None:
-        logger.debug(_('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
+        logger.debug(
+            _('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
         if extension_filter is None:
             files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
         else:

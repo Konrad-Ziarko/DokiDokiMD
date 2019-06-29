@@ -18,7 +18,7 @@ class GroupOfThreads(QThread):
     def __init__(self, ddmd, single_thread_class, message_signal, chapters, finished_signal, threads_max):
         QThread.__init__(self)
         self.ddmd = ddmd
-        self.single_thread_class = single_thread_class  # type: SingleThread
+        self.single_thread_class = single_thread_class
         self.chapters = chapters
         self.message_signal = message_signal
         self.finished_signal = finished_signal
@@ -91,7 +91,8 @@ class SingleChapterSaveThread(SingleThread):
                 if ret:
                     self.message.emit('Saved chapter {}'.format(self.chapter.title))
                 else:
-                    self.message.emit('Could not save downloaded chapter {}, in path {}'.format(self.chapter.title, path))
+                    self.message.emit(
+                        'Could not save downloaded chapter {}, in path {}'.format(self.chapter.title, path))
         self.finished.emit('')
 
 

@@ -11,7 +11,7 @@ from tools.translator import translate as _
 logger = get_logger(__name__)
 
 
-class MangareaderCrawler(BaseCrawler):
+class MangaReaderCrawler(BaseCrawler):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -28,7 +28,6 @@ class MangareaderCrawler(BaseCrawler):
         response = requests.get(start_url)
         if response.status_code == 200:
             manga_site.url = self.base_url
-
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_index_path):
                 manga = Manga()
@@ -42,24 +41,15 @@ class MangareaderCrawler(BaseCrawler):
 
     def crawl_detail(self, manga: Manga) -> None:
         start_url = urljoin(self.base_url, manga.url)
-
         response = requests.get(start_url)
         if response.status_code == 200:
             tree = html.fromstring(response.content)
-
-            # crawl for manga chapters
             for element in tree.xpath(self.re_chapter_path):
                 chapter = Chapter()
                 chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
                 manga.add_chapter(chapter)
-
-            # TODO 1: crawl for manga details
-            # https://api.jikan.moe/
-
-            # chapters are in descending order so
-            # manga.chapters.reverse()
         else:
             raise ConnectionError(
                 _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
@@ -69,7 +59,6 @@ class MangareaderCrawler(BaseCrawler):
         url = start_url
         chapter.pages = []
         retrieved_all_pages = False
-
         while not retrieved_all_pages:
             response = requests.get(url)
             if response.status_code == 200:

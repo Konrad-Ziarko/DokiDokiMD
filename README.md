@@ -28,9 +28,14 @@ To post any issue use available issue templates:
 - [BUG](.github/ISSUE_TEMPLATE/bug_report.md)
 - [FEATURE](.github/ISSUE_TEMPLATE/feature_request.md)
 
-## Dependencies
-- [reportlab](https://pypi.org/project/reportlab/) - PDF converter
-- [PyQt5](https://pypi.org/project/PyQt5/) - GUI
+## [Dependencies](requirements.txt)
+- [reportlab](https://pypi.org/project/reportlab/)
+- [PyQt5](https://pypi.org/project/PyQt5/)
+- [configobj](https://pypi.org/project/configobj/)
+- [six](https://pypi.org/project/six/)
+- [Pillow](https://pypi.org/project/Pillow/)
+- [lxml](https://pypi.org/project/lxml/)
+- [requests](https://pypi.org/project/requests/)
 
 ## License
 This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE) file for details

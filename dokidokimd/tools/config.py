@@ -25,7 +25,8 @@ class ConfigManager(object):
             logger.error(_('Could not open config file due to: {}').format(e))
 
     @property
-    def sot(self): return self._sot
+    def sot(self):
+        return self._sot
 
     @sot.setter
     def sot(self, sot: bool):
