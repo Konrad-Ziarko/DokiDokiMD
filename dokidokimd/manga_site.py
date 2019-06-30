@@ -57,8 +57,8 @@ class Chapter:
         try:
             state['pages'] = []
             state['in_memory'] = False
-        except Exception as e:
-            pass
+        except KeyError as e:
+            logger.debug(_('Could not drop filed while dumping object, reason {}').format(e))
         return state
 
     def __setstate__(self, state):
