@@ -62,7 +62,7 @@ class MangaSeeCrawler(BaseCrawler):
             response = s.get(url)
             if response.status_code == 200:
                 tree = html.fromstring(response.content)
-                for page_num, page in enumerate(tree.xpath('/html/body/div[2]/div[4]/div/div/span/select[2]/option'), start=1):
+                for page_num in range(1, 1 + len(tree.xpath('/html/body/div[2]/div[4]/div/div/span/select[2]/option'))):
                     image_src = str(tree.xpath(self.re_download_path)[0])
                     image = s.get(image_src, stream=True).content
                     chapter.pages.append(image)

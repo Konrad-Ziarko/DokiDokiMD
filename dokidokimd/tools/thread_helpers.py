@@ -1,5 +1,10 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 
+from tools.kz_logger import get_logger
+from tools.translator import translate as _
+
+logger = get_logger(__name__)
+
 
 class SingleThread(QThread):
     message = pyqtSignal('PyQt_PyObject')
@@ -62,9 +67,10 @@ class SingleChapterDownloadThread(SingleThread):
         try:
             self.ddmd.crawl_chapter(self.chapter)
         except Exception as e:
-            self.message.emit('Could not download chapter {}, reason {}'.format(self.chapter.title, e))
+            self.message.emit(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
+            logger.error(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
         else:
-            self.message.emit('Downloaded {}'.format(self.chapter.title))
+            self.message.emit(_('Downloaded {}').format(self.chapter.title))
         finally:
             self.finished.emit('')
 
@@ -77,22 +83,26 @@ class SingleChapterSaveThread(SingleThread):
         if self.chapter.in_memory:
             ret, path = self.ddmd.save_images_from_chapter(self.chapter)
             if ret:
-                self.message.emit('Downloaded {}'.format(self.chapter.title))
+                self.message.emit(_('Downloaded {}').format(self.chapter.title))
             else:
-                self.message.emit('Could not save downloaded chapter {}, in path {}'.format(self.chapter.title, path))
+                self.message.emit(
+                    _('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
+                logger.error(_('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
         else:
             try:
-                self.message.emit('Downloading {}'.format(self.chapter.title))
+                self.message.emit(_('Downloading {}').format(self.chapter.title))
                 self.ddmd.crawl_chapter(self.chapter)
             except Exception as e:
-                self.message.emit('Could not download chapter {}, reason {}'.format(self.chapter.title, e))
+                self.message.emit(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
+                logger.error(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
             else:
                 ret, path = self.ddmd.save_images_from_chapter(self.chapter)
                 if ret:
-                    self.message.emit('Saved chapter {}'.format(self.chapter.title))
+                    self.message.emit(_('Saved chapter {}').format(self.chapter.title))
                 else:
                     self.message.emit(
-                        'Could not save downloaded chapter {}, in path {}'.format(self.chapter.title, path))
+                        _('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
+                    logger.error(_('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
         self.finished.emit('')
 
 
@@ -104,28 +114,32 @@ class SingleChapterConvertThread(SingleThread):
         if self.chapter.in_memory:
             ret, path = self.ddmd.convert_chapter_2_pdf(self.chapter)
             if ret:
-                self.message.emit('Converted {}'.format(self.chapter.title))
+                self.message.emit(_('Converted {}').format(self.chapter.title))
             else:
-                self.message.emit('Could not convert chapter {} to PDF file {}'.format(self.chapter.title, path))
+                self.message.emit(_('Could not convert chapter {} to PDF file {}').format(self.chapter.title, path))
+                logger.error(_('Could not convert chapter {} to PDF file {}').format(self.chapter.title, path))
         else:
             if self.ddmd.chapter_images_present(self.chapter):
                 ret, path = self.ddmd.convert_images_2_pdf(self.chapter)
                 if ret:
-                    self.message.emit('Converted {}'.format(self.chapter.title))
+                    self.message.emit(_('Converted {}').format(self.chapter.title))
                 else:
                     self.message.emit(
-                        'Could not save convert chapter {}, in path {}'.format(self.chapter.title, path))
+                        _('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
+                    logger.error(_('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
             else:
                 try:
-                    self.message.emit('Downloading {}'.format(self.chapter.title))
+                    self.message.emit(_('Downloading {}').format(self.chapter.title))
                     self.ddmd.crawl_chapter(self.chapter)
                 except Exception as e:
-                    self.message.emit('Could not download chapter {}, reason {}'.format(self.chapter.title, e))
+                    self.message.emit(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
+                    logger.error(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
                 else:
                     ret, path = self.ddmd.convert_chapter_2_pdf(self.chapter)
                     if ret:
-                        self.message.emit('Converted {}'.format(self.chapter.title))
+                        self.message.emit(_('Converted {}').format(self.chapter.title))
                     else:
                         self.message.emit(
-                            'Could not save convert chapter {}, in path {}'.format(self.chapter.title, path))
+                            _('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
+                        logger.error(_('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
         self.finished.emit('')

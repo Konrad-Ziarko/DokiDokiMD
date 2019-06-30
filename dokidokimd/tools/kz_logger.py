@@ -3,12 +3,11 @@ import logging
 from tools.translator import translate as _
 
 PROJECT_NAME = "DokiDokiMD"
-logging_level = logging.DEBUG
 
 
-def init_logger() -> None:
+def init_logger(logging_level) -> None:
     logger = logging.getLogger('{}'.format(PROJECT_NAME))
-    logger.setLevel(logging_level)
+    logger.setLevel(logging_level * 10)
     fh = logging.FileHandler('{}.log'.format(PROJECT_NAME))
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)

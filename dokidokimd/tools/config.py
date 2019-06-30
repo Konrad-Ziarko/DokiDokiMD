@@ -15,6 +15,7 @@ class ConfigManager(object):
         self._dark_mode = False         # type: bool
         self._db_path = ''              # type: str
         self._max_threads = 10          # type: int
+        self._log_level = 2             # type: str
         try:
             self.config.read(self.config_path)
             if not self.config.has_section('Window'):
@@ -42,6 +43,16 @@ class ConfigManager(object):
     def dark_mode(self, dark_mode: bool):
         self.config.set('Window', 'dark_mode', str(dark_mode))
         self._dark_mode = dark_mode
+        self.write_config()
+
+    @property
+    def log_level(self):
+        return self._log_level
+
+    @log_level.setter
+    def log_level(self, value: int):
+        self.config.set('Window', 'log_level', str(value))
+        self._log_level = value
         self.write_config()
 
     @property
@@ -73,6 +84,12 @@ class ConfigManager(object):
             self.dark_mode = self.config.getboolean('Window', 'dark_mode')
         except (configparser.NoOptionError, ValueError):
             self.dark_mode = False
+        try:
+            self.log_level = self.config.getint('Window', 'log_level')
+            if not 0 < self.log_level < 6:
+                self.log_level = 2
+        except (configparser.NoOptionError, ValueError):
+            self.log_level = 2
         try:
             self.db_path = self.config.get('Manga', 'db_path')
         except (configparser.NoOptionError, ValueError):

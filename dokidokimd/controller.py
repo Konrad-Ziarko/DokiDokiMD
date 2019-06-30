@@ -2,7 +2,6 @@ import imghdr
 from io import BytesIO
 from os import getcwd, remove, rename, listdir, makedirs, unlink, rmdir
 from os.path import join, isdir, isfile
-from sys import platform
 from typing import List, Dict, Tuple, Union
 
 from manga_site import load_dumped_site, MangaSite, Chapter, Manga
@@ -13,10 +12,6 @@ from tools.kz_logger import get_logger
 from tools.make_pdf import PDF
 from tools.translator import translate as _
 
-if platform == 'linux' or platform == 'linux2':
-    pass
-elif platform == 'win32':
-    pass
 
 logger = get_logger(__name__)
 
@@ -54,7 +49,7 @@ class DDMDController:
         self.load_sites()
         if len(self.manga_sites) == 0 or len(self.manga_sites) != len(MangaCrawlersMap.items()):
             current_sites = [site.site_name for site in self.manga_sites]
-            for site, crawler in MangaCrawlersMap.items():
+            for site in MangaCrawlersMap.keys():
                 if site not in current_sites:
                     self.manga_sites.append(MangaSite(site))
 
@@ -298,7 +293,6 @@ class DDMDController:
                 except Exception as e:
                     logger.critical(_('Could not save {} site to a file{}\nError message: {}').format(
                         manga_site.site_name, path_to_file, e))
-                    pass
             else:
                 with open(path_to_file, 'wb') as the_file:
                     the_file.write(data)
