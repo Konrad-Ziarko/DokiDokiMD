@@ -37,26 +37,22 @@ class GroupOfThreads(QThread):
         if len(self.chapters) > self.threads_max:
             for i in range(0, len(self.chapters), self.threads_max):
                 chunk = self.chapters[i:i + self.threads_max]
-                for chapter in chunk:
-                    t = self.single_thread_class(self.ddmd, chapter)
-                    t.message.connect(self.message_signal)
-                    t.finished.connect(self.finished_signal)
-                    self.threads.append(t)
-                    t.start()
-                for t in self.threads:
-                    t.wait()
-                self.threads.clear()
+                self.start_threads(chunk)
         else:
-            for chapter in self.chapters:
-                t = self.single_thread_class(self.ddmd, chapter)
-                t.message.connect(self.message_signal)
-                t.finished.connect(self.finished_signal)
-                self.threads.append(t)
-                t.start()
-            for t in self.threads:
-                t.wait()
+            self.start_threads(self.chapters)
         self.message.emit(self.name)
         self.finished.emit(len(self.chapters))
+
+    def start_threads(self, chapters):
+        for chapter in chapters:
+            t = self.single_thread_class(self.ddmd, chapter)
+            t.message.connect(self.message_signal)
+            t.finished.connect(self.finished_signal)
+            self.threads.append(t)
+            t.start()
+        for t in self.threads:
+            t.wait()
+        self.threads.clear()
 
 
 class SingleChapterDownloadThread(SingleThread):
@@ -83,11 +79,10 @@ class SingleChapterSaveThread(SingleThread):
         if self.chapter.in_memory:
             ret, path = self.ddmd.save_images_from_chapter(self.chapter)
             if ret:
-                self.message.emit(_('Downloaded {}').format(self.chapter.title))
+                self.message.emit(_('Saved chapter {}').format(self.chapter.title))
             else:
                 self.message.emit(
                     _('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
-                logger.error(_('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
         else:
             try:
                 self.message.emit(_('Downloading {}').format(self.chapter.title))
@@ -102,7 +97,6 @@ class SingleChapterSaveThread(SingleThread):
                 else:
                     self.message.emit(
                         _('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
-                    logger.error(_('Could not save downloaded chapter {}, in path {}').format(self.chapter.title, path))
         self.finished.emit('')
 
 
@@ -117,7 +111,6 @@ class SingleChapterConvertThread(SingleThread):
                 self.message.emit(_('Converted {}').format(self.chapter.title))
             else:
                 self.message.emit(_('Could not convert chapter {} to PDF file {}').format(self.chapter.title, path))
-                logger.error(_('Could not convert chapter {} to PDF file {}').format(self.chapter.title, path))
         else:
             if self.ddmd.chapter_images_present(self.chapter):
                 ret, path = self.ddmd.convert_images_2_pdf(self.chapter)
@@ -126,14 +119,12 @@ class SingleChapterConvertThread(SingleThread):
                 else:
                     self.message.emit(
                         _('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
-                    logger.error(_('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
             else:
                 try:
                     self.message.emit(_('Downloading {}').format(self.chapter.title))
                     self.ddmd.crawl_chapter(self.chapter)
                 except Exception as e:
                     self.message.emit(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
-                    logger.error(_('Could not download chapter {}, reason {}').format(self.chapter.title, e))
                 else:
                     ret, path = self.ddmd.convert_chapter_2_pdf(self.chapter)
                     if ret:
@@ -141,5 +132,4 @@ class SingleChapterConvertThread(SingleThread):
                     else:
                         self.message.emit(
                             _('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
-                        logger.error(_('Could not save convert chapter {}, in path {}').format(self.chapter.title, path))
         self.finished.emit('')
