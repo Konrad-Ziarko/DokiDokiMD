@@ -4,7 +4,7 @@ from os import getcwd, remove, rename, listdir, makedirs, unlink, rmdir
 from os.path import join, isdir, isfile
 from typing import List, Dict, Tuple, Union
 
-from manga_site import load_dumped_site, MangaSite, Chapter, Manga
+from models import load_dumped_site, MangaSite, Chapter, Manga
 from tools.config import ConfigManager
 from tools.crawlers.base_crawler import BaseCrawler
 from tools.crawlers.crawlers import MangaCrawlersMap

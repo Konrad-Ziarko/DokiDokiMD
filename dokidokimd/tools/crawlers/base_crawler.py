@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABCMeta
 
-from manga_site import MangaSite, Manga, Chapter
+from models import MangaSite, Manga, Chapter
 
 
 class BaseCrawler:

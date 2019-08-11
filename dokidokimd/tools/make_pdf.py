@@ -8,7 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
-from manga_site import Chapter
+from models import Chapter
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
 

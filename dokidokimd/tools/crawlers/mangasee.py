@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 import requests
 from lxml import html
 
-from manga_site import Manga, Chapter, MangaSite
+from models import Manga, Chapter, MangaSite
 from tools.crawlers.base_crawler import BaseCrawler
 from tools.kz_logger import get_logger
 from tools.translator import translate as _
