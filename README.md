@@ -21,7 +21,7 @@ Python 3.5 or greater.
 ## Overview
 Data downloaded by the program is stored in a files. Each site has its own file (database).
 <br>
-Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](dokidokimd/manga_site.py) to see what is stored.
+Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](dokidokimd/models.py) to see what is stored.
 
 ## Issues
 To post any issue use available issue templates:
