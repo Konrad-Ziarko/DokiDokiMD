@@ -23,6 +23,20 @@ Data downloaded by the program is stored in a files. Each site has its own file 
 <br>
 Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](dokidokimd/models.py) to see what is stored.
 
+## How to use?
+1. Use dropdown menu to select website
+2. Click the search(magnifying lens) icon - this will trigger indexing (you can use pre-indexed site files from repo)
+    1. Cloudflare websites or some other may be heavy on indexing - look at the size of included sites to figure out which site is easy to index 
+3. On the left site, there should be a list of all the manga found on currently selected site.
+    1. You can type name(or part of it) in the text box (hinted with "Search manga..." text) - can freeze for a sec if there is a lot of positions
+    2. Simply double click on desired manga and available chapters will be indexed (not downloaded)
+    3. Checkout other operations available by right mouse click!
+4. On the right site, there should be a list of all the chapters in selected manga
+    1. Simply double click on desired chapter do download it (it will be stored in memory)
+    2. Use right mouse click to discover avaiable options -- you can create PDF without saving images  
+
+Just explore the GUI
+
 ## Issues
 To post any issue use available issue templates:
 - [BUG](.github/ISSUE_TEMPLATE/bug_report.md)
