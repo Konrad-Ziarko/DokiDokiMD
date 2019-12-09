@@ -6,12 +6,10 @@ from typing import List, Dict, Tuple, Union
 
 from models import load_dumped_site, MangaSite, Chapter, Manga
 from tools.config import ConfigManager
-from tools.crawlers.base_crawler import BaseCrawler
-from tools.crawlers.crawlers import MangaCrawlersMap
+from tools.crawler import MangaCrawlersMap, BaseCrawler
 from tools.kz_logger import get_logger
 from tools.make_pdf import PDF
 from tools.translator import translate as _
-
 
 logger = get_logger(__name__)
 
@@ -329,5 +327,3 @@ class DDMDController:
                                 'Could not load old last state either. Error message: {}').format(e2))
 
 
-if __name__ == '__main__':
-    pass
