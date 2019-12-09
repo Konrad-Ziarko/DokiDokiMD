@@ -2,7 +2,7 @@ import atexit
 import sys
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPalette
+from PyQt5.QtGui import QPalette, QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QMenu, QFileDialog
 
 from consts import QCOLOR_DARK, QCOLOR_HIGHLIGHT, QCOLOR_WHITE
@@ -130,6 +130,8 @@ class GUI(QMainWindow):
 def start_gui(title):
     qt_app = QApplication(sys.argv)
     qt_app.setStyle('fusion')
+    qt_app.setWindowIcon(QIcon('../icons/favicon.png'))
     gui = GUI(qt_app, title)
+    gui.show_msg_on_status_bar("Some websites, like KissManga, index more than 10min!")
     atexit.register(gui.before_exit)
     sys.exit(qt_app.exec_())

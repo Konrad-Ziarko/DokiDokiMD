@@ -1,3 +1,4 @@
+import os
 from abc import abstractmethod, ABCMeta
 from collections import OrderedDict
 from urllib.parse import urljoin
@@ -181,7 +182,7 @@ class KissMangaCrawler(BaseCrawler):
 
         options = Options()
         #options.add_argument("--headless")
-        self.driver = webdriver.Firefox(options=options)
+        self.driver = webdriver.Firefox(options=options, service_log_path=os.path.devnull)
 
     def crawl_index(self, manga_site: MangaSite) -> None:
         start_url = urljoin(self.base_url, self.manga_index)
