@@ -29,6 +29,7 @@ To post any issue use available issue templates:
 - [FEATURE](.github/ISSUE_TEMPLATE/feature_request.md)
 
 ## [Dependencies](requirements.txt)
+- [Selenium](https://github.com/SeleniumHQ/selenium)
 - [reportlab](https://pypi.org/project/reportlab/)
 - [PyQt5](https://pypi.org/project/PyQt5/)
 - [configobj](https://pypi.org/project/configobj/)
@@ -38,4 +39,4 @@ To post any issue use available issue templates:
 - [requests](https://pypi.org/project/requests/)
 
 ## License
-This project is licensed under the BSD-3 License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
