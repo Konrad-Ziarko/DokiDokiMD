@@ -35,6 +35,8 @@ Object used by the program are saved and loaded (with [Pickle](https://docs.pyth
     1. Simply double click on desired chapter do download it (it will be stored in memory)
     2. Use right mouse click to discover avaiable options -- you can create PDF without saving images  
 
+> If you choose to save or create PDF without downloading chapter program will queue download for you
+
 Just explore the GUI
 
 ## Issues

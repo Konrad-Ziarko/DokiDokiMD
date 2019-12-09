@@ -1,3 +1,4 @@
+import functools
 import os
 import shutil
 from sys import platform
@@ -20,11 +21,11 @@ logger = get_logger(__name__)
 
 
 def manga_list_selected(func):
-    def func_wrapper(self, *a, **kw):
-        if self.mangas_list.currentRow() != -1:
-            return func(self, a, kw)
+    @functools.wraps(func)
+    def func_wrapper(*a, **kw):
+        if a[0].mangas_list.currentRow() != -1:
+            return func(*a, **kw)
     return func_wrapper
-
 
 
 class ListWidget(QListWidget):
@@ -237,7 +238,6 @@ class MangaSiteWidget(QWidget):
     # endregion
 
     # region chapters_list actions
-    @manga_list_selected
     def chapter_clear_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
         for selected_chapter in selected_chapters:
@@ -245,7 +245,6 @@ class MangaSiteWidget(QWidget):
             chapter.clear_state()
         self.repaint_chapters()
 
-    @manga_list_selected
     def start_thread_for_chapter(self, single_thread_class, message):
         selected_chapters = self.chapters_list.selectedItems()
         chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
@@ -260,7 +259,6 @@ class MangaSiteWidget(QWidget):
         t.finished.connect(self.remove_from_progress_max)
         t.start()
 
-    @manga_list_selected
     def chapter_double_clicked(self):
         chapter_index = self.chapters_list.currentRow()
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
