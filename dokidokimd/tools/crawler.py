@@ -182,6 +182,14 @@ class MangaSeeCrawler(MangaPandaCrawler):
         return len(chapter.pages)
 
 
+def wait_for_page(driver, x_path):
+    wait = True
+    while wait:
+        sleep(0.5)
+        if len(html.fromstring(driver.find_element_by_xpath("//*").get_attribute("outerHTML")).xpath(x_path)) != 0:
+            wait = False
+
+
 class KissMangaCrawler(BaseCrawler):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -199,8 +207,7 @@ class KissMangaCrawler(BaseCrawler):
             with SeleniumDriver() as driver:
                 collected_all_pages = False
                 driver.get(start_url)
-                if driver.execute_script('return document.readyState;') != 'complete':
-                    raise ConnectionError(f'Could not download page {start_url} content, try again.')
+                wait_for_page(driver, self.re_index_path)
                 manga_site.url = self.base_url
                 while collected_all_pages is False:
                     content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
@@ -224,8 +231,7 @@ class KissMangaCrawler(BaseCrawler):
         try:
             with SeleniumDriver() as driver:
                 driver.get(start_url)
-                if driver.execute_script('return document.readyState;') != 'complete':
-                    raise ConnectionError(f'Could not download page {start_url} content, try again.')
+                wait_for_page(driver, self.re_chapter_path)
                 content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
                 tree = html.fromstring(content)
                 # crawl for manga chapters
@@ -242,7 +248,7 @@ class KissMangaCrawler(BaseCrawler):
         try:
             with SeleniumDriver() as driver:
                 driver.get(start_url)
-                sleep(5)
+                wait_for_page(driver, self.re_download_path)
                 chapter.pages = []
                 content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
                 tree = html.fromstring(content)
