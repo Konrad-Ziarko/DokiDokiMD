@@ -6,12 +6,10 @@ from typing import List, Dict, Tuple, Union
 
 from models import load_dumped_site, MangaSite, Chapter, Manga
 from tools.config import ConfigManager
-from tools.crawlers.base_crawler import BaseCrawler
-from tools.crawlers.crawlers import MangaCrawlersMap
+from tools.crawler import MangaCrawlersMap, BaseCrawler
 from tools.kz_logger import get_logger
 from tools.make_pdf import PDF
 from tools.translator import translate as _
-
 
 logger = get_logger(__name__)
 
@@ -26,6 +24,9 @@ def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
 class DDMDController:
     def __init__(self, config) -> None:
         self.config = config                                        # type: ConfigManager
+
+        self.site_extension = 'ddmd'                                # type: str
+        self.old_site_extension = 'old'                             # type: str
 
         self.downloaded_pages = 0                                   # type: int
         self.downloaded_chapters = 0                                # type: int
@@ -78,7 +79,7 @@ class DDMDController:
                 self.crawlers[site_name] = crawler
                 return crawler
             else:
-                logger.error(_('Could not get {} crawlers').format(site_name))
+                logger.error(_(F'Could not get {site_name} crawlers'))
                 return False
 
     def set_cwd_site(self, site: MangaSite):
@@ -97,8 +98,7 @@ class DDMDController:
         i = 0
         output = _('Current manga sites:')
         for site in self.manga_sites:
-            output += (_('{}[{}]:{} with {} mangas').format(
-                delimiter, i, site.site_name, len(site.mangas) if site.mangas is not None else 0))
+            output += (_(F'{delimiter}[{i}]:{site.site_name} with {len(site.mangas) if site.mangas is not None else 0} mangas'))
             i = i + 1
         return output
 
@@ -113,10 +113,9 @@ class DDMDController:
         site = self.cwd_site
         if site.mangas is None:
             site.mangas = list()
-        output = (_('Site {} contains {} mangas:').format(site.site_name, len(site.mangas)))
+        output = (_(F'Site {site.site_name} contains {len(site.mangas)} mangas:'))
         for manga in site.mangas:
-            output += (_('{}[{}]:{} with {} chapters').format(
-                delimiter, i, manga.title, len(manga.chapters) if manga.chapters is not None else 0))
+            output += (_(F'{delimiter}[{i}]:{manga.title} with {len(manga.chapters) if manga.chapters is not None else 0} chapters'))
             i = i + 1
         return output
 
@@ -131,9 +130,9 @@ class DDMDController:
         manga = self.cwd_manga
         if manga.chapters is None:
             manga.chapters = list()
-        output = (_('Manga {} contains {} chapters:').format(manga.title, len(manga.chapters)))
+        output = (_(F'Manga {manga.title} contains {len(manga.chapters)} chapters:'))
         for chapter in manga.chapters:
-            output += (_('{}[{}]:{} contains {} pages').format(delimiter, i, chapter.title, len(chapter.pages)))
+            output += (_(F'{delimiter}[{i}]:{chapter.title} contains {len(chapter.pages)} pages'))
             if delimiter == '\t' and i != 0 and i % 5 == 0:
                 output += '\n'
             i = i + 1
@@ -203,11 +202,11 @@ class DDMDController:
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_dir(images_dir)
-            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title() + '.pdf'))
+            pdf_converter.make_pdf(chapter.title, join(pdf_dir, F'{chapter.get_path_safe_title()}.pdf'))
             chapter.converted = True
             self.converted_chapters += 1
         except Exception as e:
-            logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
+            logger.error(_(F'Could not save PDF to {pdf_dir}\nError message: {e}'))
             return False, pdf_dir
         return True, pdf_dir
 
@@ -222,11 +221,11 @@ class DDMDController:
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_chapter(chapter)
-            pdf_converter.make_pdf(chapter.title, join(pdf_dir, chapter.get_path_safe_title() + '.pdf'))
+            pdf_converter.make_pdf(chapter.title, join(pdf_dir, F'{chapter.get_path_safe_title()}.pdf'))
             chapter.converted = True
             self.converted_chapters += 1
         except Exception as e:
-            logger.error(_('Could not save PDF to {}\nError message: {}').format(pdf_dir, e))
+            logger.error(_(F'Could not save PDF to {pdf_dir}\nError message: {e}'))
             return False, pdf_dir
         return True, pdf_dir
 
@@ -241,11 +240,11 @@ class DDMDController:
                     if isfile(file_path):
                         unlink(file_path)
                 except Exception as e:
-                    logger.error(_('Could not remove image {}\nError message: {}').format(file_path, e))
+                    logger.error(_(F'Could not remove image {file_path}\nError message: {e}'))
             rmdir(images_dir)
             chapter.pages = list()
         except Exception as e:
-            logger.error(_('Could not remove images from {}\nError message: {}').format(images_dir, e))
+            logger.error(_(F'Could not remove images from {images_dir}\nError message: {e}'))
             return False, images_dir
         return True, images_dir
 
@@ -256,11 +255,11 @@ class DDMDController:
                 makedirs(images_dir, exist_ok=True)
             for idx, page in enumerate(chapter.pages):
                 img_type = imghdr.what(BytesIO(page))
-                path = join(images_dir, '{:0>3d}.{}'.format(idx, img_type))
+                path = join(images_dir, F'{idx:0>3d}.{img_type}')
                 with open(path, 'wb') as f:
                     f.write(page)
         except Exception as e:
-            logger.error(_('Could not save images to {}\nError message: {}').format(images_dir, e))
+            logger.error(_(F'Could not save images to {images_dir}\nError message: {e}'))
             return False, images_dir
         chapter.saved = True
         return True, images_dir
@@ -270,15 +269,14 @@ class DDMDController:
             if not isdir(self.sites_location):
                 makedirs(self.sites_location, exist_ok=True)
         except Exception as e:
-            logger.critical(_('Could not make or access directory {}\nError message: {}').format(
-                self.sites_location, e))
+            logger.critical(_(F'Could not make or access directory {self.sites_location}\nError message: {e}'))
             return False
 
         for manga_site in self.manga_sites:
             data = manga_site.dump()
 
-            path_to_file = join(self.sites_location, manga_site.site_name)
-            path_to_old_file = '{}.old'.format(path_to_file)
+            path_to_file = join(self.sites_location, F'{manga_site.site_name}.{self.site_extension}')
+            path_to_old_file = F'{path_to_file}.{self.old_site_extension}'
 
             if isfile(path_to_file):
                 # check if old file exists and remove it
@@ -291,14 +289,12 @@ class DDMDController:
                     with open(path_to_file, 'wb') as the_file:
                         the_file.write(data)
                 except Exception as e:
-                    logger.critical(_('Could not save {} site to a file{}\nError message: {}').format(
-                        manga_site.site_name, path_to_file, e))
+                    logger.critical(_(F'Could not save {manga_site.site_name} site to a file{path_to_file}\nError message: {e}'))
             else:
                 with open(path_to_file, 'wb') as the_file:
                     the_file.write(data)
         logger.info(_('Data saved to DB'))
-        logger.info(_('Stats: Downloaded Pages({}), Downloaded Chapters ({}), Converted PDFs ({})').format(
-            self.downloaded_pages, self.downloaded_chapters, self.converted_chapters))
+        logger.info(_(F'Stats: Downloaded Pages({self.downloaded_pages}), Downloaded Chapters ({self.downloaded_chapters}), Converted PDFs ({self.converted_chapters})'))
         return True
 
     def load_sites(self) -> bool:
@@ -308,9 +304,9 @@ class DDMDController:
             logger.info(_('No saved state. Creating dir for fresh DB'))
             return False
         for file_name in listdir(self.sites_location):
-            if not file_name.endswith('.old'):
+            if not file_name.endswith(F'.{self.old_site_extension}') and file_name.endswith(self.site_extension):
                 if isfile(join(self.sites_location, file_name)):
-                    logger.info(_('Loading last state for {}').format(file_name))
+                    logger.info(_(F'Loading last state for {file_name}'))
                     try:
                         with open(join(self.sites_location, file_name), 'rb') as the_file:
                             data = the_file.read()
@@ -318,16 +314,14 @@ class DDMDController:
                             self.manga_sites.append(manga_site)
                     except Exception as e1:
                         logger.warning(_(
-                            'Could not load last state, trying older one. Error message: {}').format(e1))
+                            F'Could not load last state, trying older one. Error message: {e1}'))
                         try:
-                            with open('{}.old'.format(join(self.sites_location, file_name)), 'rb') as the_file:
+                            with open(F'{join(self.sites_location, file_name)}.{self.old_site_extension}', 'rb') as the_file:
                                 data = the_file.read()
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)
                         except Exception as e2:
                             logger.warning(_(
-                                'Could not load old last state either. Error message: {}').format(e2))
+                                F'Could not load old last state either. Error message: {e2}'))
 
 
-if __name__ == '__main__':
-    pass

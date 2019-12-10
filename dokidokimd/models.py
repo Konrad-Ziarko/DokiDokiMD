@@ -58,7 +58,7 @@ class Chapter:
             state['pages'] = []
             state['in_memory'] = False
         except KeyError as e:
-            logger.debug(_('Could not drop filed while dumping object, reason {}').format(e))
+            logger.debug(_(F'Could not drop filed while dumping object, reason {e}'))
         return state
 
     def __setstate__(self, state):
@@ -150,8 +150,7 @@ class MangaSite:
             self.mangas.append(manga)
 
     def dump(self):
-        logger.debug(_('Dumped {} site with {} mangas - size in memory = {} bytes.').format(
-            self.site_name, len(self.mangas), get_object_mem_size(self)))
+        logger.debug(_(F'Dumped {self.site_name} site with {len(self.mangas)} mangas - size in memory = {get_object_mem_size(self)} bytes.'))
         return pickle.dumps(self)
 
     def __getstate__(self):
