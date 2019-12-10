@@ -80,7 +80,7 @@ class MangaPandaCrawler(BaseCrawler):
                 manga_site.add_manga(manga)
         else:
             raise ConnectionError(
-                _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+                _(F'Could not connect with {start_url} site, status code: {response.status_code}'))
 
     def crawl_detail(self, manga: Manga) -> None:
         start_url = manga.url
@@ -93,8 +93,7 @@ class MangaPandaCrawler(BaseCrawler):
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
                 manga.add_chapter(chapter)
         else:
-            raise ConnectionError(
-                _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+            raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
 
     def download(self, chapter: Chapter) -> int:
         start_url = chapter.url
@@ -118,8 +117,7 @@ class MangaPandaCrawler(BaseCrawler):
                     # next button navigates to next chapter
                     retrieved_all_pages = True
             else:
-                raise ConnectionError(
-                    _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+                raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
         return len(chapter.pages)
 
 
@@ -158,8 +156,7 @@ class MangaSeeCrawler(MangaPandaCrawler):
 
                 manga.add_chapter(chapter, True)
         else:
-            raise ConnectionError(
-                _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+            raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
 
     def download(self, chapter: Chapter) -> int:
         start_url = chapter.url
@@ -177,8 +174,7 @@ class MangaSeeCrawler(MangaPandaCrawler):
                     response = s.get(url)
                     tree = html.fromstring(response.content)
             else:
-                raise ConnectionError(
-                    _('Could not connect with {} site, status code: {}').format(start_url, response.status_code))
+                raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
         return len(chapter.pages)
 
 
@@ -224,7 +220,7 @@ class KissMangaCrawler(BaseCrawler):
                     else:
                         collected_all_pages = True
         except Exception as e:
-            raise ConnectionError(_('Could not connect with {} site, error message: {}').format(start_url, e))
+            raise ConnectionError(_(F'Could not connect with {start_url} site, error message: {e}'))
 
     def crawl_detail(self, manga: Manga) -> None:
         start_url = manga.url
@@ -241,7 +237,7 @@ class KissMangaCrawler(BaseCrawler):
                     chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
                     manga.add_chapter(chapter)
         except Exception as e:
-            raise ConnectionError(_('Could not connect with {} site, error message: {}').format(start_url, e))
+            raise ConnectionError(_(F'Could not connect with {start_url} site, error message: {e}'))
 
     def download(self, chapter: Chapter) -> int:
         start_url = chapter.url
@@ -258,13 +254,13 @@ class KissMangaCrawler(BaseCrawler):
                     chapter.pages.append(image)
             return len(chapter.pages)
         except Exception as e:
-            raise ConnectionError(_('Could not connect with {} site, error message: {}').format(start_url, e))
+            raise ConnectionError(_(F'Could not connect with {start_url} site, error message: {e}'))
 
 
 MangaCrawlersMap = OrderedDict({
     'MangaReader': MangaReaderCrawler,
     'MangaPanda': MangaPandaCrawler,
     'MangaSee': MangaSeeCrawler,
-    'KissManga': KissMangaCrawler,
+    # 'KissManga': KissMangaCrawler,  # WIP
 })
 

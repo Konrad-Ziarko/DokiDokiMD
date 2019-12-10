@@ -23,7 +23,7 @@ class ConfigManager(object):
             if not self.config.has_section('Manga'):
                 self.config.add_section('Manga')
         except Exception as e:
-            logger.error(_('Could not open config file due to: {}').format(e))
+            logger.error(_(F'Could not open config file due to: {e}'))
 
     @property
     def sot(self):

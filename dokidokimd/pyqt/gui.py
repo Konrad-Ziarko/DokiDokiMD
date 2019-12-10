@@ -45,7 +45,7 @@ class GUI(QMainWindow):
         save_act.triggered.connect(
             lambda: (
                 self.controller.store_sites(),
-                self.show_msg_on_status_bar(_('DB saved to {}').format(self.config.db_path))
+                self.show_msg_on_status_bar(_(F'DB saved to {self.config.db_path}'))
             )
         )
         manga_menu.addAction(save_act)
@@ -83,7 +83,7 @@ class GUI(QMainWindow):
             self.controller.load_db()
             self.main_widget = MangaSiteWidget(self, self.controller)
             self.setCentralWidget(self.main_widget)
-            self.show_msg_on_status_bar(_('Loaded DB from {}').format(self.config.db_path))
+            self.show_msg_on_status_bar(_(F'Loaded DB from {self.config.db_path}'))
 
     def set_dark_style(self, is_checked):
         self.config.dark_mode = is_checked
