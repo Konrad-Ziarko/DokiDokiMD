@@ -26,7 +26,7 @@ class DDMDController:
         self.config = config                                        # type: ConfigManager
 
         self.site_extension = 'ddmd'                                # type: str
-        self.old_site_extension = 'old'                                # type: str
+        self.old_site_extension = 'old'                             # type: str
 
         self.downloaded_pages = 0                                   # type: int
         self.downloaded_chapters = 0                                # type: int
