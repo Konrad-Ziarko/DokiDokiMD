@@ -1,13 +1,12 @@
 import imghdr
+import os
 from io import BytesIO
-from os import getcwd, remove, rename, listdir, makedirs, unlink, rmdir
-from os.path import join, isdir, isfile
 from typing import List, Dict, Tuple, Union
 
 from models import load_dumped_site, MangaSite, Chapter, Manga
 from tools.config import ConfigManager
 from tools.crawler import MangaCrawlersMap, BaseCrawler
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
 from tools.make_pdf import PDF
 from tools.translator import translate as _
 
@@ -22,7 +21,7 @@ def manga_site_2_crawler(site_name) -> Union[BaseCrawler, None]:
 
 
 class DDMDController:
-    def __init__(self, config) -> None:
+    def __init__(self, config, start_dir) -> None:
         self.config = config                                        # type: ConfigManager
 
         self.site_extension = 'ddmd'                                # type: str
@@ -37,9 +36,8 @@ class DDMDController:
         self.cwd_chapter = None                                     # type: Chapter
         self.cwd_page = -1                                          # type: int
 
-        self.start_dir = getcwd()                                   # type: str
         if self.sites_location == '':
-            self.sites_location = join(self.start_dir, 'sites')
+            self.sites_location = os.path.join(start_dir, 'data', 'sites')
         self.manga_sites = []                                       # type: List[MangaSite]
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
         self.load_db()
@@ -179,11 +177,11 @@ class DDMDController:
             return chapter
 
     def chapter_images_present(self, chapter: Chapter) -> bool:
-        images_dir = join(self.sites_location, 'downloaded', chapter.manga_ref.site_ref.site_name,
+        images_dir = os.path.join(self.sites_location, 'downloaded', chapter.manga_ref.site_ref.site_name,
                           chapter.manga_ref.get_path_safe_title(), chapter.get_path_safe_title())
-        if not isdir(images_dir):
+        if not os.path.isdir(images_dir):
             return False
-        if not listdir(images_dir):
+        if not os.listdir(images_dir):
             return False
         return True
 
@@ -193,16 +191,16 @@ class DDMDController:
         """
         pdf_dir = chapter.get_convert_path(self.sites_location)
         images_dir = chapter.get_download_path(self.sites_location)
-        if not isdir(images_dir):
+        if not os.path.isdir(images_dir):
             logger.warning(_('Could not convert to PDF, source path with images does not exist'))
             return False, pdf_dir
         try:
-            if not isdir(pdf_dir):
-                makedirs(pdf_dir, exist_ok=True)
+            if not os.path.isdir(pdf_dir):
+                os.makedirs(pdf_dir, exist_ok=True)
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_dir(images_dir)
-            pdf_converter.make_pdf(chapter.title, join(pdf_dir, F'{chapter.get_path_safe_title()}.pdf'))
+            pdf_converter.make_pdf(chapter.title, os.path.join(pdf_dir, F'{chapter.get_path_safe_title()}.pdf'))
             chapter.converted = True
             self.converted_chapters += 1
         except Exception as e:
@@ -216,12 +214,12 @@ class DDMDController:
         """
         pdf_dir = chapter.get_convert_path(self.sites_location)
         try:
-            if not isdir(pdf_dir):
-                makedirs(pdf_dir, exist_ok=True)
+            if not os.path.isdir(pdf_dir):
+                os.makedirs(pdf_dir, exist_ok=True)
             pdf_converter = PDF()
             pdf_converter.clear_pages()
             pdf_converter.add_chapter(chapter)
-            pdf_converter.make_pdf(chapter.title, join(pdf_dir, F'{chapter.get_path_safe_title()}.pdf'))
+            pdf_converter.make_pdf(chapter.title, os.path.join(pdf_dir, F'{chapter.get_path_safe_title()}.pdf'))
             chapter.converted = True
             self.converted_chapters += 1
         except Exception as e:
@@ -232,16 +230,16 @@ class DDMDController:
     def remove_chapter_images(self, chapter: Chapter) -> Tuple[bool, str]:
         images_dir = chapter.get_download_path(self.sites_location)
         try:
-            if not isdir(images_dir):
+            if not os.path.isdir(images_dir):
                 return False, images_dir
-            for the_file in listdir(images_dir):
-                file_path = join(images_dir, the_file)
+            for the_file in os.listdir(images_dir):
+                file_path = get_resource_path(os.path.join(images_dir, the_file))
                 try:
-                    if isfile(file_path):
-                        unlink(file_path)
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
                 except Exception as e:
                     logger.error(_(F'Could not remove image {file_path}\nError message: {e}'))
-            rmdir(images_dir)
+            os.rmdir(images_dir)
             chapter.pages = list()
         except Exception as e:
             logger.error(_(F'Could not remove images from {images_dir}\nError message: {e}'))
@@ -251,11 +249,11 @@ class DDMDController:
     def save_images_from_chapter(self, chapter: Chapter) -> Tuple[bool, str]:
         images_dir = chapter.get_download_path(self.sites_location)
         try:
-            if not isdir(images_dir):
-                makedirs(images_dir, exist_ok=True)
+            if not os.path.isdir(images_dir):
+                os.makedirs(images_dir, exist_ok=True)
             for idx, page in enumerate(chapter.pages):
                 img_type = imghdr.what(BytesIO(page))
-                path = join(images_dir, F'{idx:0>3d}.{img_type}')
+                path = get_resource_path(os.path.join(images_dir, F'{idx:0>3d}.{img_type}'))
                 with open(path, 'wb') as f:
                     f.write(page)
         except Exception as e:
@@ -266,8 +264,8 @@ class DDMDController:
 
     def store_sites(self) -> bool:
         try:
-            if not isdir(self.sites_location):
-                makedirs(self.sites_location, exist_ok=True)
+            if not os.path.isdir(self.sites_location):
+                os.makedirs(self.sites_location, exist_ok=True)
         except Exception as e:
             logger.critical(_(F'Could not make or access directory {self.sites_location}\nError message: {e}'))
             return False
@@ -275,15 +273,15 @@ class DDMDController:
         for manga_site in self.manga_sites:
             data = manga_site.dump()
 
-            path_to_file = join(self.sites_location, F'{manga_site.site_name}.{self.site_extension}')
+            path_to_file = os.path.join(self.sites_location, F'{manga_site.site_name}.{self.site_extension}')
             path_to_old_file = F'{path_to_file}.{self.old_site_extension}'
 
-            if isfile(path_to_file):
+            if os.path.isfile(path_to_file):
                 # check if old file exists and remove it
-                if isfile(path_to_old_file):
-                    remove(path_to_old_file)
+                if os.path.isfile(path_to_old_file):
+                    os.remove(path_to_old_file)
                 # rename current file
-                rename(path_to_file, path_to_old_file)
+                os.rename(path_to_file, path_to_old_file)
                 try:
                     # create new file
                     with open(path_to_file, 'wb') as the_file:
@@ -299,16 +297,16 @@ class DDMDController:
 
     def load_sites(self) -> bool:
         self.manga_sites = []
-        if not isdir(self.sites_location):
-            makedirs(self.sites_location, exist_ok=True)
+        if not os.path.isdir(self.sites_location):
+            os.makedirs(self.sites_location, exist_ok=True)
             logger.info(_('No saved state. Creating dir for fresh DB'))
             return False
-        for file_name in listdir(self.sites_location):
+        for file_name in os.listdir(self.sites_location):
             if not file_name.endswith(F'.{self.old_site_extension}') and file_name.endswith(self.site_extension):
-                if isfile(join(self.sites_location, file_name)):
+                if os.path.isfile(os.path.join(self.sites_location, file_name)):
                     logger.info(_(F'Loading last state for {file_name}'))
                     try:
-                        with open(join(self.sites_location, file_name), 'rb') as the_file:
+                        with open(os.path.join(self.sites_location, file_name), 'rb') as the_file:
                             data = the_file.read()
                             manga_site = load_dumped_site(data)
                             self.manga_sites.append(manga_site)
@@ -316,7 +314,7 @@ class DDMDController:
                         logger.warning(_(
                             F'Could not load last state, trying older one. Error message: {e1}'))
                         try:
-                            with open(F'{join(self.sites_location, file_name)}.{self.old_site_extension}', 'rb') as the_file:
+                            with open(F'{os.path.join(self.sites_location, file_name)}.{self.old_site_extension}', 'rb') as the_file:
                                 data = the_file.read()
                                 manga_site = load_dumped_site(data)
                                 self.manga_sites.append(manga_site)

@@ -4,7 +4,7 @@ from enum import Enum
 
 from PIL import Image
 
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -27,10 +27,3 @@ def b64_to_image(b64_string: str) -> bytes:
     image = Image.open(io.BytesIO(decoded_string))
     return image
 
-
-if __name__ == '__main__':
-    with open('../../tests/functional/test_create_pdf_from_jpegs/images/1.jpg', 'rb') as image_file:
-        encoded_string = image_to_b64(image_file.read())
-        print(encoded_string)
-
-        img = b64_to_image(encoded_string)

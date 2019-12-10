@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
 from models import Manga, Chapter, MangaSite
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
 from tools.translator import translate as _
 
 logger = get_logger(__name__)

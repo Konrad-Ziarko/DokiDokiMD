@@ -23,6 +23,9 @@ Data downloaded by the program is stored in a files. Each site has its own file 
 <br>
 Object used by the program are saved and loaded (with [Pickle](https://docs.python.org/3/library/pickle.html)), look into [source](dokidokimd/models.py) to see what is stored.
 
+## Build from source
+*Run [script](installer/installer.py) stored in installer folder*
+
 ## How to use?
 1. Use dropdown menu to select website
 2. Click the search(magnifying lens) icon - this will trigger indexing (you can use pre-indexed site files from repo)

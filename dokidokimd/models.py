@@ -3,7 +3,7 @@ import re
 from os.path import join
 from typing import List
 
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
 from tools.misc import get_object_mem_size
 from tools.translator import translate as _
 

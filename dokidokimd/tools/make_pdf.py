@@ -9,7 +9,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
 from models import Chapter
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
 from tools.translator import translate as _
 
 logger = get_logger(__name__)
@@ -73,6 +73,3 @@ class PDF:
         logger.info(_(F'PDF saved to a {path} file.'))
         return num_pages
 
-
-if __name__ == '__main__':
-    pass

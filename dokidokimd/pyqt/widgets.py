@@ -10,9 +10,10 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
     QListWidgetItem, QLineEdit, QProgressBar
 
-from consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
+from pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
 from controller import DDMDController
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
+from tools.misc import get_resource_path
 from tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, SingleChapterConvertThread, \
     GroupOfThreads
 from tools.translator import translate as _
@@ -92,7 +93,7 @@ class MangaSiteWidget(QWidget):
         # region button for search manga site
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
         btn_crawl_site.clicked.connect(self.update_mangas)
-        btn_crawl_site.setIcon(QIcon('../icons/baseline_search_black_18dpx2.png'))
+        btn_crawl_site.setIcon(QIcon(get_resource_path('../icons/baseline_search_black_18dpx2.png')))
         search_part.addWidget(btn_crawl_site)
         search_part.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
