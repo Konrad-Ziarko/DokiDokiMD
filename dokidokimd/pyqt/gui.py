@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 class GUI(QMainWindow):
     def __init__(self, qt_app, title):
-        super(GUI, self).__init__()
+        QMainWindow.__init__(self)
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
         self.config = ConfigManager()

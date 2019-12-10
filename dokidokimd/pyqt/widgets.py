@@ -30,7 +30,7 @@ def manga_list_selected(func):
 
 class ListWidget(QListWidget):
     def __init__(self, default_string=_('No Items')):
-        super(ListWidget, self).__init__()
+        QListWidget.__init__(self)
         self.default_string = default_string
 
     def paintEvent(self, e: QPaintEvent) -> None:
@@ -43,7 +43,7 @@ class ListWidget(QListWidget):
 
 class MangaSiteWidget(QWidget):
     def __init__(self, parent, controller):
-        super(MangaSiteWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
         self.ddmd = controller                          # type: DDMDController
         self.filter_text = ''                           # type: str
         self.threads = dict()                           # type: Dict
