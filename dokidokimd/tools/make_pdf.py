@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from os import listdir
 from os.path import isfile, join
@@ -8,9 +9,9 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
-from models import Chapter
-from tools.kz_logger import get_logger
-from tools.translator import translate as _
+from dokidokimd.models import Chapter
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
@@ -23,6 +24,7 @@ class PDF:
 
     def clear_pages(self) -> None:
         self.pages_binary = list()
+        self.files_list = list()
 
     def add_chapter(self, chapter: Chapter):
         self.pages_binary.extend(chapter.pages)
@@ -69,10 +71,9 @@ class PDF:
             else:
                 self.builder.drawImage(self.files_list[i], 0, 0)
                 self.builder.showPage()
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
         self.builder.save()
         logger.info(_(F'PDF saved to a {path} file.'))
         return num_pages
 
-
-if __name__ == '__main__':
-    pass

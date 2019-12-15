@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
 from models import Manga, Chapter, MangaSite
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
 from tools.translator import translate as _
 
 logger = get_logger(__name__)
@@ -57,8 +57,8 @@ class BaseCrawler:
 
 
 class MangaPandaCrawler(BaseCrawler):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self) -> None:
+        BaseCrawler.__init__(self)
         self.base_url = 'https://www.mangapanda.com/'                           # type: str
         self.manga_index = '/alphabetical'                                      # type: str
 
@@ -122,8 +122,8 @@ class MangaPandaCrawler(BaseCrawler):
 
 
 class MangaReaderCrawler(MangaPandaCrawler):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self) -> None:
+        MangaPandaCrawler.__init__(self)
         self.base_url = 'https://www.mangareader.net'                           # type: str
         self.manga_index = '/alphabetical'                                      # type: str
 
@@ -134,8 +134,8 @@ class MangaReaderCrawler(MangaPandaCrawler):
 
 
 class MangaSeeCrawler(MangaPandaCrawler):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self) -> None:
+        MangaPandaCrawler.__init__(self)
         self.base_url = 'http://mangaseeonline.us/'                             # type: str
         self.manga_index = '/directory'                                         # type: str
 
@@ -187,8 +187,8 @@ def wait_for_page(driver, x_path):
 
 
 class KissMangaCrawler(BaseCrawler):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self) -> None:
+        BaseCrawler.__init__(self)
         self.base_url = 'https://kissmanga.com/'                                            # type: str
         self.manga_index = '/MangaList'                                                     # type: str
 

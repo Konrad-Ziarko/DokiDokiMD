@@ -1,8 +1,25 @@
-from os import popen
+import shutil
+from os import popen, path
 
-run_cmd = 'python -m PyInstaller --onefile dokidokimd/438.py --windowed --name=DokiDokiMD --clean'
+PROGRAM_NAME = 'DokiDokiMD'
+
+run_cmd = F'python -m PyInstaller -y -F -w --name={PROGRAM_NAME} ' \
+          F'..{path.sep}dokidokimd/main.py ' \
+          F'-i "..{path.sep}icons{path.sep}favicon.ico" ' \
+          F'--add-data "..{path.sep}icons";"..{path.sep}icons" '
+
 
 process = popen(run_cmd)
 preprocessed = process.read()
 process.close()
 
+shutil.rmtree('build')
+try:
+    shutil.move(F'dist{path.sep}{PROGRAM_NAME}', '.')
+except Exception as e:
+    print(F'Could not move files under dist{path.sep}{PROGRAM_NAME}')
+try:
+    shutil.move(F'dist{path.sep}{PROGRAM_NAME}.exe', '.')
+except Exception as e:
+    print(F'Could not move dist{path.sep}{PROGRAM_NAME}.exe')
+shutil.rmtree('dist')
