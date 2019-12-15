@@ -2,27 +2,26 @@ import atexit
 import sys
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPalette
+from PyQt5.QtGui import QPalette, QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QMenu, QFileDialog
 
-from consts import QCOLOR_DARK, QCOLOR_HIGHLIGHT, QCOLOR_WHITE
+from pyqt.consts import QCOLOR_DARK, QCOLOR_HIGHLIGHT, QCOLOR_WHITE
 from controller import DDMDController
 from pyqt.widgets import MangaSiteWidget
-from tools.config import ConfigManager
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
+from tools.misc import get_resource_path
 from tools.translator import translate as _
 
 logger = get_logger(__name__)
 
 
 class GUI(QMainWindow):
-    def __init__(self, qt_app, title):
-        super(GUI, self).__init__()
+    def __init__(self, qt_app, title, config, start_cwd):
+        QMainWindow.__init__(self)
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
-        self.config = ConfigManager()
-        self.config.read_config()
-        self.controller = DDMDController(self.config)
+        self.config = config
+        self.controller = DDMDController(self.config, start_cwd)
         self.title = title
         self.setWindowTitle(self.title)
         self.main_widget = MangaSiteWidget(self, self.controller)
@@ -45,7 +44,7 @@ class GUI(QMainWindow):
         save_act.triggered.connect(
             lambda: (
                 self.controller.store_sites(),
-                self.show_msg_on_status_bar(_('DB saved to {}').format(self.config.db_path))
+                self.show_msg_on_status_bar(_(F'DB saved to {self.config.db_path}'))
             )
         )
         manga_menu.addAction(save_act)
@@ -83,7 +82,7 @@ class GUI(QMainWindow):
             self.controller.load_db()
             self.main_widget = MangaSiteWidget(self, self.controller)
             self.setCentralWidget(self.main_widget)
-            self.show_msg_on_status_bar(_('Loaded DB from {}').format(self.config.db_path))
+            self.show_msg_on_status_bar(_(F'Loaded DB from {self.config.db_path}'))
 
     def set_dark_style(self, is_checked):
         self.config.dark_mode = is_checked
@@ -127,9 +126,11 @@ class GUI(QMainWindow):
         QMessageBox.question(self, title, msg, QMessageBox.Ok)
 
 
-def start_gui(title):
+def start_gui(title, config, start_cwd):
     qt_app = QApplication(sys.argv)
     qt_app.setStyle('fusion')
-    gui = GUI(qt_app, title)
+    qt_app.setWindowIcon(QIcon(get_resource_path('../icons/favicon.png')))
+    gui = GUI(qt_app, title, config, start_cwd)
+    gui.show_msg_on_status_bar("Some websites, like KissManga, index more than 10min!")
     atexit.register(gui.before_exit)
     sys.exit(qt_app.exec_())

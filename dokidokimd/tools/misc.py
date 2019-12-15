@@ -1,3 +1,4 @@
+import os
 import sys
 from gc import get_referents
 from types import ModuleType, FunctionType
@@ -5,12 +6,18 @@ from types import ModuleType, FunctionType
 BLACKLIST = type, ModuleType, FunctionType
 
 
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
+
 def get_object_mem_size(obj):
     """
     Credit to Aaron Hall
     """
     if isinstance(obj, BLACKLIST):
-        raise TypeError('getsize() does not take argument of type: {}'.format(type(obj)))
+        raise TypeError(F'getsize() does not take argument of type: {type(obj)}')
     seen_ids = set()
     size = 0
     objects = [obj]

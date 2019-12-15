@@ -11,20 +11,22 @@ install:
 
 os:
   - linux
-  #- windows
+#  - windows
 
 matrix:
   include:
-    - python: 3.5
     - python: 3.6
     - python: 3.7
       dist: xenial
 
-    #- os: windows
-    #  script: python installer/installer.py
+#    - os: windows
+#      script: python installer/installer.py
 
     - stage: setup
       script: python setup.py build sdist bdist
+
+    - os: linux
+      script: python installer/installer.py
 
 script: pytest
 

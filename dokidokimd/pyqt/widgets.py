@@ -1,3 +1,4 @@
+import functools
 import os
 import shutil
 from sys import platform
@@ -9,9 +10,10 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
     QListWidgetItem, QLineEdit, QProgressBar
 
-from consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
+from pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
 from controller import DDMDController
-from tools.kz_logger import get_logger
+from tools.ddmd_logger import get_logger
+from tools.misc import get_resource_path
 from tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, SingleChapterConvertThread, \
     GroupOfThreads
 from tools.translator import translate as _
@@ -19,9 +21,17 @@ from tools.translator import translate as _
 logger = get_logger(__name__)
 
 
+def manga_list_selected(func):
+    @functools.wraps(func)
+    def func_wrapper(*a, **kw):
+        if a[0].mangas_list.currentRow() != -1:
+            return func(*a, **kw)
+    return func_wrapper
+
+
 class ListWidget(QListWidget):
     def __init__(self, default_string=_('No Items')):
-        super(ListWidget, self).__init__()
+        QListWidget.__init__(self)
         self.default_string = default_string
 
     def paintEvent(self, e: QPaintEvent) -> None:
@@ -34,7 +44,7 @@ class ListWidget(QListWidget):
 
 class MangaSiteWidget(QWidget):
     def __init__(self, parent, controller):
-        super(MangaSiteWidget, self).__init__(parent)
+        QWidget.__init__(self, parent)
         self.ddmd = controller                          # type: DDMDController
         self.filter_text = ''                           # type: str
         self.threads = dict()                           # type: Dict
@@ -67,7 +77,7 @@ class MangaSiteWidget(QWidget):
         # region combobox for manga sites
         self.combo_box_sites.activated.connect(self.site_selected)
         for idx, site in enumerate(self.ddmd.get_sites()):
-            self.combo_box_sites.addItem('{}:{}({})'.format(idx, site.site_name, len(site.mangas)), site)
+            self.combo_box_sites.addItem(F'{idx}:{site.site_name}({len(site.mangas)})', site)
         self.combo_box_sites.setMaximumWidth(self.combo_box_sites.sizeHint().width())
         search_part.addWidget(self.combo_box_sites)
         # endregion
@@ -83,7 +93,7 @@ class MangaSiteWidget(QWidget):
         # region button for search manga site
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
         btn_crawl_site.clicked.connect(self.update_mangas)
-        btn_crawl_site.setIcon(QIcon('../icons/baseline_search_black_18dpx2.png'))
+        btn_crawl_site.setIcon(QIcon(get_resource_path('../icons/baseline_search_black_18dpx2.png')))
         search_part.addWidget(btn_crawl_site)
         search_part.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
@@ -256,19 +266,23 @@ class MangaSiteWidget(QWidget):
         self.ddmd.set_cwd_chapter(chapter)
         self.start_thread_for_chapter(SingleChapterDownloadThread, _('Downloading {} chapters...'))
 
+    @manga_list_selected
     def mark_as_downloaded(self):
-        selected_chapters = self.chapters_list.selectedItems()
-        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
-        for chapter in chapters:
-            chapter.set_downloaded(True)
-        self.repaint_chapters()
+        if self.mangas_list.currentRow() != -1:
+            selected_chapters = self.chapters_list.selectedItems()
+            chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+            for chapter in chapters:
+                chapter.set_downloaded(True)
+            self.repaint_chapters()
 
+    @manga_list_selected
     def mark_as_converted(self):
-        selected_chapters = self.chapters_list.selectedItems()
-        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
-        for chapter in chapters:
-            chapter.converted = True
-        self.repaint_chapters()
+        if self.mangas_list.currentRow() != -1:
+            selected_chapters = self.chapters_list.selectedItems()
+            chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+            for chapter in chapters:
+                chapter.converted = True
+            self.repaint_chapters()
 
     # endregion
 
@@ -318,10 +332,8 @@ class MangaSiteWidget(QWidget):
             self.parent().setDisabled(True)
             manga = self.ddmd.crawl_manga()
         except Exception as e:
-            logger.warning(_('Could not download chapters for {}, reason: {}').format(
-                self.ddmd.get_current_manga().title, e))
-            self.parent().show_msg_on_status_bar(_('Could not download chapters for {}').format(
-                self.ddmd.get_current_manga().title))
+            logger.warning(_(F'Could not download chapters for {self.ddmd.get_current_manga().title}, reason: {e}'))
+            self.parent().show_msg_on_status_bar(_(F'Could not download chapters for {self.ddmd.get_current_manga().title}'))
         else:
             self.load_stored_chapters(manga)
         finally:
@@ -357,7 +369,7 @@ class MangaSiteWidget(QWidget):
             self.parent().setDisabled(True)
             site = self.ddmd.crawl_site()
         except Exception as e:
-            logger.warning(_('Could not refresh site, reason: {}').format(e))
+            logger.warning(_(F'Could not refresh site, reason: {e}'))
             self.parent().show_msg_on_status_bar(_('Could not refresh site, for more info look into log file.'))
         else:
             self.load_stored_mangas(site)
@@ -387,6 +399,7 @@ class MangaSiteWidget(QWidget):
 
     # endregion
 
+    @manga_list_selected
     def open_file_explorer(self, level: str):
         base_path = self.ddmd.sites_location
         if level == 'M':
@@ -397,10 +410,11 @@ class MangaSiteWidget(QWidget):
             return
         path = list_object.get_download_path(base_path)
         if platform == 'linux' or platform == 'linux2':
-            os.system('gio open "{}"'.format(path))
+            os.system(F'gio open "{path}"')
         elif platform == 'win32':
-            os.system('explorer "{}"'.format(path))
+            os.system(F'explorer "{path}"')
 
+    @manga_list_selected
     def open_terminal(self, level: str):
         base_path = self.ddmd.sites_location
         if level == 'M':
@@ -411,10 +425,11 @@ class MangaSiteWidget(QWidget):
             return
         path = list_object.get_download_path(base_path)
         if platform == 'linux' or platform == 'linux2':
-            os.system('gnome-terminal --working-directory="{}"'.format(path))
+            os.system(F'gnome-terminal --working-directory="{path}"')
         elif platform == 'win32':
-            os.system('start cmd /K "cd /d {}"'.format(path))
+            os.system(F'start cmd /K "cd /d {path}"')
 
+    @manga_list_selected
     def remove_from_disk(self, level: str):
         base_path = self.ddmd.sites_location
         if level == 'M':

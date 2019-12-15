@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from os import listdir
 from os.path import isfile, join
@@ -8,9 +9,9 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
-from models import Chapter
-from tools.kz_logger import get_logger
-from tools.translator import translate as _
+from dokidokimd.models import Chapter
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
@@ -23,6 +24,7 @@ class PDF:
 
     def clear_pages(self) -> None:
         self.pages_binary = list()
+        self.files_list = list()
 
     def add_chapter(self, chapter: Chapter):
         self.pages_binary.extend(chapter.pages)
@@ -35,16 +37,16 @@ class PDF:
 
     def add_dir(self, dir_path: str, extension_filter: str = None) -> None:
         logger.debug(
-            _('Added {} directory in pdf module. With extension filter equal to {}').format(dir_path, extension_filter))
+            _(F'Added {dir_path} directory in pdf module. With extension filter equal to {extension_filter}'))
         if extension_filter is None:
             files = [join(dir_path, f) for f in listdir(dir_path) if isfile(join(dir_path, f))]
         else:
             files = [join(dir_path, f) for f in listdir(dir_path) if
-                     isfile(join(dir_path, f) and f.endswith('.{}'.format(extension_filter)))]
+                     isfile(join(dir_path, f) and f.endswith(F'.{extension_filter}'))]
         files = sorted(files)
         self.files_list += files
 
-    def make_pdf(self, title: str, path: str) -> None:
+    def make_pdf(self, title: str, path: str) -> int:
         use_binary = False
         if len(self.pages_binary) > 0:
             use_binary = True
@@ -69,10 +71,9 @@ class PDF:
             else:
                 self.builder.drawImage(self.files_list[i], 0, 0)
                 self.builder.showPage()
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
         self.builder.save()
-        logger.info(_('PDF saved to a {} file.').format(path))
+        logger.info(_(F'PDF saved to a {path} file.'))
         return num_pages
 
-
-if __name__ == '__main__':
-    pass

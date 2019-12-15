@@ -44,6 +44,6 @@ setup(
         'Programming Language :: Python :: 3.6',
         'License :: OSI Approved :: BSD License',
     ],
-    test_suite='tests',
+    test_suite='test',
     python_requires='>=3',
 )

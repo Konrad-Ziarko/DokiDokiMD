@@ -3,9 +3,9 @@ import re
 from os.path import join
 from typing import List
 
-from tools.kz_logger import get_logger
-from tools.misc import get_object_mem_size
-from tools.translator import translate as _
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.misc import get_object_mem_size
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
@@ -28,6 +28,9 @@ class Chapter:
         self.downloaded = False     # type: bool
         self.converted = False      # type: bool
         self.in_memory = False      # type: bool
+
+    def add_manga_ref(self, manga):
+        self.manga_ref = manga
 
     def set_downloaded(self, state=True):
         self.downloaded = state
@@ -58,7 +61,7 @@ class Chapter:
             state['pages'] = []
             state['in_memory'] = False
         except KeyError as e:
-            logger.debug(_('Could not drop filed while dumping object, reason {}').format(e))
+            logger.debug(_(F'Could not drop filed while dumping object, reason {e}'))
         return state
 
     def __setstate__(self, state):
@@ -91,6 +94,9 @@ class Manga:
 
         self.downloaded = False     # type: bool
 
+    def add_site_ref(self, site):
+        self.site_ref = site
+
     def clear_state(self):
         self.chapters = []
         self.downloaded = False
@@ -105,7 +111,7 @@ class Manga:
         return compiled_regex.sub(path_safe_replace_char, self.title)
 
     def add_chapter(self, chapter, reverse=False) -> None:
-        chapter.manga_ref = self
+        chapter.add_manga_ref(self)
         if self.chapters is None:
             self.chapters = list()
             if reverse:
@@ -142,7 +148,7 @@ class MangaSite:
         self.mangas = []
 
     def add_manga(self, manga) -> None:
-        manga.site_ref = self
+        manga.add_site_ref(self)
         if self.mangas is None:
             self.mangas = list()
             self.mangas.append(manga)
@@ -150,8 +156,7 @@ class MangaSite:
             self.mangas.append(manga)
 
     def dump(self):
-        logger.debug(_('Dumped {} site with {} mangas - size in memory = {} bytes.').format(
-            self.site_name, len(self.mangas), get_object_mem_size(self)))
+        logger.debug(_(F'Dumped {self.site_name} site with {len(self.mangas)} mangas - size in memory = {get_object_mem_size(self)} bytes.'))
         return pickle.dumps(self)
 
     def __getstate__(self):
