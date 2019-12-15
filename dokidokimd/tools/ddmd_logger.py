@@ -1,7 +1,7 @@
 import os
 import logging
 
-from tools.translator import translate as _
+from dokidokimd.tools.translator import translate as _
 
 PROJECT_NAME = "DokiDokiMD"
 
