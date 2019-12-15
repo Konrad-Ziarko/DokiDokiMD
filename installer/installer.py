@@ -1,5 +1,5 @@
 import shutil
-from os import popen, path, unlink
+from os import popen, path
 
 PROGRAM_NAME = 'DokiDokiMD'
 
@@ -16,11 +16,10 @@ process.close()
 shutil.rmtree('build')
 try:
     shutil.move(F'dist{path.sep}{PROGRAM_NAME}', '.')
-except:
-    pass
+except Exception as e:
+    print(F'Could not move files under dist{path.sep}{PROGRAM_NAME}')
 try:
     shutil.move(F'dist{path.sep}{PROGRAM_NAME}.exe', '.')
-except:
-    pass
+except Exception as e:
+    print(F'Could not move dist{path.sep}{PROGRAM_NAME}.exe')
 shutil.rmtree('dist')
-# unlink(F'{PROGRAM_NAME}.spec')  # travis fails on this line

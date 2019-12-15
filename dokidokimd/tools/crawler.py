@@ -123,7 +123,7 @@ class MangaPandaCrawler(BaseCrawler):
 
 class MangaReaderCrawler(MangaPandaCrawler):
     def __init__(self) -> None:
-        BaseCrawler.__init__(self)
+        MangaPandaCrawler.__init__(self)
         self.base_url = 'https://www.mangareader.net'                           # type: str
         self.manga_index = '/alphabetical'                                      # type: str
 
@@ -135,7 +135,7 @@ class MangaReaderCrawler(MangaPandaCrawler):
 
 class MangaSeeCrawler(MangaPandaCrawler):
     def __init__(self) -> None:
-        BaseCrawler.__init__(self)
+        MangaPandaCrawler.__init__(self)
         self.base_url = 'http://mangaseeonline.us/'                             # type: str
         self.manga_index = '/directory'                                         # type: str
 
