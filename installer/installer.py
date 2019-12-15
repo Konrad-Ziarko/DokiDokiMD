@@ -23,4 +23,4 @@ try:
 except:
     pass
 shutil.rmtree('dist')
-unlink(F'{PROGRAM_NAME}.spec')
+# unlink(F'{PROGRAM_NAME}.spec')  # travis fails on this line
