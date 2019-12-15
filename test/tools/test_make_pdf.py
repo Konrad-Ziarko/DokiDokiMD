@@ -23,6 +23,7 @@ class TestMakePdfMethods(unittest.TestCase):
         pages = pdf.make_pdf('test', join(pdf_dir, 'test_result.pdf'))
 
         self.assertTrue(pages == 4)
+        self.assertTrue(len(pdf.pages_binary) == 0)
         self.assertTrue(isfile(join(directory_name, RESULTS_DIRECTORY, 'test_result.pdf')))
         self.assertTrue(getsize(join(directory_name, RESULTS_DIRECTORY, 'test_result.pdf')) > 0)
         unlink(join(pdf_dir, 'test_result.pdf'))
@@ -50,17 +51,20 @@ class TestMakePdfMethods(unittest.TestCase):
         Empty title
         """
         pdf = PDF()
-        directory_name = dirname(__file__)
-        pdf_dir = join(directory_name, RESULTS_DIRECTORY)
+        directory_path = dirname(__file__)
+        pdf_path = join(directory_path, RESULTS_DIRECTORY)
         try:
-            pdf.make_pdf(None, join(pdf_dir, 'test_result.pdf'))
+            pdf.make_pdf(None, join(pdf_path, 'test3.pdf'))
         except FileNotFoundError as e:
             raise e
 
-        self.assertTrue(isfile(join(directory_name, RESULTS_DIRECTORY, 'test_result.pdf')))
-        self.assertTrue(getsize(join(directory_name, RESULTS_DIRECTORY, 'test_result.pdf')) > 0)
-        unlink(join(pdf_dir, 'test_result.pdf'))
-        rmdir(pdf_dir)
+        self.assertTrue(len(pdf.pages_binary) == 0)
+        self.assertTrue(len(pdf.files_list) == 0)
+
+        self.assertTrue(isfile(join(directory_path, RESULTS_DIRECTORY, 'test3.pdf')))
+        self.assertTrue(getsize(join(directory_path, RESULTS_DIRECTORY, 'test3.pdf')) > 0)
+        unlink(join(pdf_path, 'test3.pdf'))
+        rmdir(pdf_path)
 
     def test_make_pdf4(self):
         """
@@ -87,6 +91,7 @@ class TestMakePdfMethods(unittest.TestCase):
 
         self.assertTrue(pages == 0)
         self.assertTrue(len(pdf.files_list) == 0)
+        self.assertTrue(len(pdf.pages_binary) == 0)
         self.assertTrue(isfile(join(directory_name, RESULTS_DIRECTORY, 'test_result.pdf')))
         self.assertTrue(getsize(join(directory_name, RESULTS_DIRECTORY, 'test_result.pdf')) > 0)
         unlink(join(pdf_dir, 'test_result.pdf'))
