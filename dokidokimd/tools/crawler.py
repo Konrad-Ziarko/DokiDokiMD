@@ -9,9 +9,9 @@ from lxml import html
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from models import Manga, Chapter, MangaSite
-from tools.ddmd_logger import get_logger
-from tools.translator import translate as _
+from dokidokimd.models import Manga, Chapter, MangaSite
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 

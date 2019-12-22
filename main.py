@@ -1,9 +1,9 @@
 import os
 
-from pyqt.gui import start_gui
-from tools.config import ConfigManager
-from tools.ddmd_logger import init_logger, PROJECT_NAME
-from tools.misc import get_resource_path
+from dokidokimd.pyqt.gui import start_gui
+from dokidokimd.tools.config import ConfigManager
+from dokidokimd.tools.ddmd_logger import init_logger, PROJECT_NAME
+from dokidokimd.tools.misc import get_resource_path
 
 if __name__ == '__main__':
     start_cwd = get_resource_path(os.getcwd())

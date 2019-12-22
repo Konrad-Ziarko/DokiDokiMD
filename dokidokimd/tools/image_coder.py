@@ -4,7 +4,7 @@ from enum import Enum
 
 from PIL import Image
 
-from tools.ddmd_logger import get_logger
+from dokidokimd.tools.ddmd_logger import get_logger
 
 logger = get_logger(__name__)
 

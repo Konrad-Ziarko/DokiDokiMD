@@ -3,12 +3,13 @@ import os
 from io import BytesIO
 from typing import List, Dict, Tuple, Union
 
-from models import load_dumped_site, MangaSite, Chapter, Manga
-from tools.config import ConfigManager
-from tools.crawler import MangaCrawlersMap, BaseCrawler
-from tools.ddmd_logger import get_logger
-from tools.make_pdf import PDF
-from tools.translator import translate as _
+from dokidokimd.models import load_dumped_site, MangaSite, Chapter, Manga
+from dokidokimd.tools.config import ConfigManager
+from dokidokimd.tools.crawler import MangaCrawlersMap, BaseCrawler
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.make_pdf import PDF
+from dokidokimd.tools.misc import get_resource_path
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 

@@ -4,9 +4,9 @@ from os import popen, path
 PROGRAM_NAME = 'DokiDokiMD'
 
 run_cmd = F'python -m PyInstaller -y -F -w --name={PROGRAM_NAME} ' \
-          F'..{path.sep}dokidokimd/main.py ' \
+          F'..{path.sep}main.py ' \
           F'-i "..{path.sep}icons{path.sep}favicon.ico" ' \
-          F'--add-data "..{path.sep}icons";"..{path.sep}icons" '
+          F'--add-data "..{path.sep}icons";"icons" '
 
 
 process = popen(run_cmd)
