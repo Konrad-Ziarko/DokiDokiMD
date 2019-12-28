@@ -441,8 +441,7 @@ class MangaSiteWidget(QWidget):
         else:
             return
         for obj in list_object:
-            shutil.rmtree(obj.get_download_path(base_path), ignore_errors=True)
-            shutil.rmtree(obj.get_convert_path(base_path), ignore_errors=True)
+            obj.remove_from_disk(base_path)
 
     def apply_filter(self):
         self.filter_text = self.filter_mangas_textbox.text()

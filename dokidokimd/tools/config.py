@@ -1,5 +1,7 @@
 import configparser
 import os
+
+from dokidokimd import DATA_DIR
 from dokidokimd.tools.ddmd_logger import get_logger
 from dokidokimd.tools.translator import translate as _
 
@@ -8,7 +10,7 @@ logger = get_logger(__name__)
 
 class ConfigManager(object):
     def __init__(self, cwd):
-        path = os.path.join(cwd, 'data')
+        path = os.path.join(cwd, DATA_DIR)
         if not os.path.isdir(path):
             os.mkdir(path)
         self.config_path = os.path.join(path, 'ddmd.ini')
@@ -27,6 +29,16 @@ class ConfigManager(object):
         except Exception as e:
             logger.error(_(F'Could not open config file due to: {e}'))
         self.read_config()
+
+    @property
+    def log_level(self):
+        return self._log_level
+
+    @log_level.setter
+    def log_level(self, value: int):
+        self.config.set('Window', 'log_level', str(value))
+        self._log_level = value
+        self.write_config()
 
     @property
     def sot(self):
@@ -77,6 +89,12 @@ class ConfigManager(object):
             self.dark_mode = self.config.getboolean('Window', 'dark_mode')
         except (configparser.NoOptionError, ValueError):
             self.dark_mode = False
+        try:
+            self.log_level = self.config.getint('Window', 'log_level')
+            if not 0 < self.log_level < 6:
+                self.log_level = 2
+        except (configparser.NoOptionError, ValueError):
+            self.log_level = 2
         try:
             self.db_path = self.config.get('Manga', 'db_path')
         except (configparser.NoOptionError, ValueError):

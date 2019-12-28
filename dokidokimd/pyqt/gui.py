@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 class GUI(QMainWindow):
-    def __init__(self, qt_app, title, config, start_cwd):
+    def __init__(self, qt_app, title, config, exe_path, start_cwd):
         QMainWindow.__init__(self)
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
@@ -126,11 +126,11 @@ class GUI(QMainWindow):
         QMessageBox.question(self, title, msg, QMessageBox.Ok)
 
 
-def start_gui(title, config, start_cwd):
+def start_gui(title, config, exe_path, start_cwd):
     qt_app = QApplication(sys.argv)
     qt_app.setStyle('fusion')
     qt_app.setWindowIcon(QIcon(get_resource_path('icons/favicon.png')))
-    gui = GUI(qt_app, title, config, start_cwd)
+    gui = GUI(qt_app, title, config, exe_path, start_cwd)
     gui.show_msg_on_status_bar("Some websites, like KissManga, index more than 10min!")
     atexit.register(gui.before_exit)
     sys.exit(qt_app.exec_())

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from gc import get_referents
 from types import ModuleType, FunctionType
@@ -30,3 +31,12 @@ def get_object_mem_size(obj):
                 need_referents.append(obj)
         objects = get_referents(*need_referents)
     return size
+
+
+PATH_SAFE_REGEX = r"[^a-zA-Z0-9_\- \+,%\(\)\[\]\{\}'~@]+"
+PATH_SAFE_REPLACE_CHAR = r'_'
+COMPILED_PATH_SAFE_REGEX = re.compile(PATH_SAFE_REGEX, re.UNICODE)
+
+
+def make_path_os_safe(unsafe_path, substitute_char=PATH_SAFE_REPLACE_CHAR):
+    return COMPILED_PATH_SAFE_REGEX.sub(substitute_char, unsafe_path)

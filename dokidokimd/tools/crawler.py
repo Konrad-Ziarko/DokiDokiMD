@@ -74,9 +74,9 @@ class MangaPandaCrawler(BaseCrawler):
             manga_site.url = self.base_url
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_index_path):
-                manga = Manga()
-                manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                manga = Manga(title, url, manga_site)
                 manga_site.add_manga(manga)
         else:
             raise ConnectionError(
@@ -88,7 +88,7 @@ class MangaPandaCrawler(BaseCrawler):
         if response.status_code == 200:
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_chapter_path):
-                chapter = Chapter()
+                chapter = Chapter(manga)
                 chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
                 manga.add_chapter(chapter)
@@ -150,7 +150,7 @@ class MangaSeeCrawler(MangaPandaCrawler):
         if response.status_code == 200:
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_chapter_path):
-                chapter = Chapter()
+                chapter = Chapter(manga)
                 chapter.title = str(element.xpath('span/text()')[0]).strip().replace('\t', ' ')
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
@@ -209,9 +209,9 @@ class KissMangaCrawler(BaseCrawler):
                     content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
                     tree = html.fromstring(content)
                     for element in tree.xpath(self.re_index_path):
-                        manga = Manga()
-                        manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                        manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                        title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                        url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                        manga = Manga(title, url, manga_site)
                         manga_site.add_manga(manga)
                     for element2 in tree.xpath(self.re_index_next_page):
                         if 'Next'.lower() in element2.xpath('text()')[0].lower():
@@ -232,7 +232,7 @@ class KissMangaCrawler(BaseCrawler):
                 tree = html.fromstring(content)
                 # crawl for manga chapters
                 for element in tree.xpath(self.re_chapter_path):
-                    chapter = Chapter()
+                    chapter = Chapter(manga)
                     chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                     chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
                     manga.add_chapter(chapter)
