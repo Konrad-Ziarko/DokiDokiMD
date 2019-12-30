@@ -43,6 +43,9 @@ Object used by the program are saved and loaded (with [Pickle](https://docs.pyth
 
 Just explore the GUI
 
+![Main window](docs/images/screen1.png)  
+![Main window](docs/images/screen2.png)  
+
 ## Issues
 To post any issue use available issue templates:
 - [BUG](.github/ISSUE_TEMPLATE/bug_report.md)

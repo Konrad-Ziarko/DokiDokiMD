@@ -88,9 +88,10 @@ class MangaPandaCrawler(BaseCrawler):
         if response.status_code == 200:
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_chapter_path):
-                chapter = Chapter(manga)
-                chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                chapter = Chapter(manga, title)
+                chapter.url = url
                 manga.add_chapter(chapter)
         else:
             raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
@@ -232,9 +233,10 @@ class KissMangaCrawler(BaseCrawler):
                 tree = html.fromstring(content)
                 # crawl for manga chapters
                 for element in tree.xpath(self.re_chapter_path):
-                    chapter = Chapter(manga)
-                    chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                    chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                    title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                    url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                    chapter = Chapter(manga, title)
+                    chapter.url = url
                     manga.add_chapter(chapter)
         except Exception as e:
             raise ConnectionError(_(F'Could not connect with {start_url} site, error message: {e}'))
