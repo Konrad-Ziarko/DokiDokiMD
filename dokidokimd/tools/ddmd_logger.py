@@ -1,8 +1,6 @@
 import os
 import logging
 
-from dokidokimd.tools.translator import translate as _
-
 PROJECT_NAME = "DokiDokiMD"
 
 
@@ -13,9 +11,13 @@ def init_logger(cwd) -> logging.Logger:
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
-    logger.info(_('Program started'))
     return logger
 
 
 def get_logger(module_name) -> logging.Logger:
     return logging.getLogger(F'{PROJECT_NAME}.{module_name}')
+
+
+def set_logger_level(level) -> None:
+    logger = logging.getLogger(F'{PROJECT_NAME}')
+    logger.setLevel(level*10)

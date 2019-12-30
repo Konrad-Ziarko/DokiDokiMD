@@ -5,18 +5,18 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPalette, QIcon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QAction, QMenu, QFileDialog
 
-from pyqt.consts import QCOLOR_DARK, QCOLOR_HIGHLIGHT, QCOLOR_WHITE
-from controller import DDMDController
-from pyqt.widgets import MangaSiteWidget
-from tools.ddmd_logger import get_logger
-from tools.misc import get_resource_path
-from tools.translator import translate as _
+from dokidokimd.pyqt.consts import QCOLOR_DARK, QCOLOR_HIGHLIGHT, QCOLOR_WHITE
+from dokidokimd.controller import DDMDController
+from dokidokimd.pyqt.widgets import MangaSiteWidget
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.misc import get_resource_path
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
 
 class GUI(QMainWindow):
-    def __init__(self, qt_app, title, config, start_cwd):
+    def __init__(self, qt_app, title, config, exe_path, start_cwd):
         QMainWindow.__init__(self)
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
@@ -126,11 +126,11 @@ class GUI(QMainWindow):
         QMessageBox.question(self, title, msg, QMessageBox.Ok)
 
 
-def start_gui(title, config, start_cwd):
+def start_gui(title, config, exe_path, start_cwd):
     qt_app = QApplication(sys.argv)
     qt_app.setStyle('fusion')
-    qt_app.setWindowIcon(QIcon(get_resource_path('../icons/favicon.png')))
-    gui = GUI(qt_app, title, config, start_cwd)
+    qt_app.setWindowIcon(QIcon(get_resource_path('icons/favicon.png')))
+    gui = GUI(qt_app, title, config, exe_path, start_cwd)
     gui.show_msg_on_status_bar("Some websites, like KissManga, index more than 10min!")
     atexit.register(gui.before_exit)
     sys.exit(qt_app.exec_())

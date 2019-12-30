@@ -10,13 +10,13 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
     QListWidgetItem, QLineEdit, QProgressBar
 
-from pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
-from controller import DDMDController
-from tools.ddmd_logger import get_logger
-from tools.misc import get_resource_path
-from tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, SingleChapterConvertThread, \
+from dokidokimd.pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
+from dokidokimd.controller import DDMDController
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.misc import get_resource_path
+from dokidokimd.tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, SingleChapterConvertThread, \
     GroupOfThreads
-from tools.translator import translate as _
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
@@ -93,7 +93,7 @@ class MangaSiteWidget(QWidget):
         # region button for search manga site
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
         btn_crawl_site.clicked.connect(self.update_mangas)
-        btn_crawl_site.setIcon(QIcon(get_resource_path('../icons/baseline_search_black_18dpx2.png')))
+        btn_crawl_site.setIcon(QIcon(get_resource_path('icons/baseline_search_black_18dpx2.png')))
         search_part.addWidget(btn_crawl_site)
         search_part.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
@@ -441,8 +441,7 @@ class MangaSiteWidget(QWidget):
         else:
             return
         for obj in list_object:
-            shutil.rmtree(obj.get_download_path(base_path), ignore_errors=True)
-            shutil.rmtree(obj.get_convert_path(base_path), ignore_errors=True)
+            obj.remove_from_disk(base_path)
 
     def apply_filter(self):
         self.filter_text = self.filter_mangas_textbox.text()

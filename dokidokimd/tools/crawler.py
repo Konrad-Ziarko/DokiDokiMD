@@ -9,9 +9,9 @@ from lxml import html
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from models import Manga, Chapter, MangaSite
-from tools.ddmd_logger import get_logger
-from tools.translator import translate as _
+from dokidokimd.models import Manga, Chapter, MangaSite
+from dokidokimd.tools.ddmd_logger import get_logger
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
@@ -74,9 +74,9 @@ class MangaPandaCrawler(BaseCrawler):
             manga_site.url = self.base_url
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_index_path):
-                manga = Manga()
-                manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                manga = Manga(title, url, manga_site)
                 manga_site.add_manga(manga)
         else:
             raise ConnectionError(
@@ -88,7 +88,7 @@ class MangaPandaCrawler(BaseCrawler):
         if response.status_code == 200:
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_chapter_path):
-                chapter = Chapter()
+                chapter = Chapter(manga)
                 chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
                 manga.add_chapter(chapter)
@@ -98,7 +98,7 @@ class MangaPandaCrawler(BaseCrawler):
     def download(self, chapter: Chapter) -> int:
         start_url = chapter.url
         url = start_url
-        chapter.pages = []
+        chapter.clear_state()
         retrieved_all_pages = False
         while not retrieved_all_pages:
             response = requests.get(url)
@@ -106,7 +106,7 @@ class MangaPandaCrawler(BaseCrawler):
                 tree = html.fromstring(response.content)
                 image_src = str(tree.xpath(self.re_download_path)[0])
                 image = requests.get(image_src, stream=True).content
-                chapter.pages.append(image)
+                chapter.add_page(image)
                 nav_next = str(tree.xpath(self.re_download_next_path)[0])
                 if nav_next.startswith('/'):
                     nav_next = urljoin(self.base_url, nav_next)
@@ -118,7 +118,7 @@ class MangaPandaCrawler(BaseCrawler):
                     retrieved_all_pages = True
             else:
                 raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
-        return len(chapter.pages)
+        return chapter.number_of_pages()
 
 
 class MangaReaderCrawler(MangaPandaCrawler):
@@ -150,7 +150,7 @@ class MangaSeeCrawler(MangaPandaCrawler):
         if response.status_code == 200:
             tree = html.fromstring(response.content)
             for element in tree.xpath(self.re_chapter_path):
-                chapter = Chapter()
+                chapter = Chapter(manga)
                 chapter.title = str(element.xpath('span/text()')[0]).strip().replace('\t', ' ')
                 chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
 
@@ -161,7 +161,7 @@ class MangaSeeCrawler(MangaPandaCrawler):
     def download(self, chapter: Chapter) -> int:
         start_url = chapter.url
         url = start_url
-        chapter.pages = []
+        chapter.clear_state()
         with requests.Session() as s:
             response = s.get(url)
             if response.status_code == 200:
@@ -169,13 +169,13 @@ class MangaSeeCrawler(MangaPandaCrawler):
                 for page_num in range(1, 1 + len(tree.xpath('/html/body/div[2]/div[4]/div/div/span/select[2]/option'))):
                     image_src = str(tree.xpath(self.re_download_path)[0])
                     image = s.get(image_src, stream=True).content
-                    chapter.pages.append(image)
+                    chapter.add_page(image)
                     url = start_url[:-6] + str(page_num) + start_url[-5:]
                     response = s.get(url)
                     tree = html.fromstring(response.content)
             else:
                 raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
-        return len(chapter.pages)
+        return chapter.number_of_pages()
 
 
 def wait_for_page(driver, x_path):
@@ -209,9 +209,9 @@ class KissMangaCrawler(BaseCrawler):
                     content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
                     tree = html.fromstring(content)
                     for element in tree.xpath(self.re_index_path):
-                        manga = Manga()
-                        manga.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
-                        manga.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                        title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
+                        url = urljoin(self.base_url, str(element.xpath('@href')[0]))
+                        manga = Manga(title, url, manga_site)
                         manga_site.add_manga(manga)
                     for element2 in tree.xpath(self.re_index_next_page):
                         if 'Next'.lower() in element2.xpath('text()')[0].lower():
@@ -232,7 +232,7 @@ class KissMangaCrawler(BaseCrawler):
                 tree = html.fromstring(content)
                 # crawl for manga chapters
                 for element in tree.xpath(self.re_chapter_path):
-                    chapter = Chapter()
+                    chapter = Chapter(manga)
                     chapter.title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
                     chapter.url = urljoin(self.base_url, str(element.xpath('@href')[0]))
                     manga.add_chapter(chapter)
@@ -245,14 +245,14 @@ class KissMangaCrawler(BaseCrawler):
             with SeleniumDriver() as driver:
                 driver.get(start_url)
                 wait_for_page(driver, self.re_download_path)
-                chapter.pages = []
+                chapter.clear_state()
                 content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
                 tree = html.fromstring(content)
                 for element in tree.xpath(self.re_download_path):
                     image_src = str(element.xpath('@src')[0])
                     image = requests.get(image_src, stream=True).content
-                    chapter.pages.append(image)
-            return len(chapter.pages)
+                    chapter.add_page(image)
+            return chapter.number_of_pages()
         except Exception as e:
             raise ConnectionError(_(F'Could not connect with {start_url} site, error message: {e}'))
 
