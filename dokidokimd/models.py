@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class Chapter:
     def __init__(self, manga, title: str = None) -> None:
-        self.manga_ref = manga      # type: Manga
+        self.manga = manga      # type: Manga
         self.title = title          # type: str
         self.url = None             # type: str
         self.pages = []             # type: List[bytes]
@@ -28,6 +28,12 @@ class Chapter:
         self.saved_images = False   # type: bool
         self.converted = False      # type: bool
         self.in_memory = False      # type: bool
+
+    def number_of_pages(self):
+        return len(self.pages)
+
+    def add_page(self, page_as_bytes: bytes):
+        self.pages.append(page_as_bytes)
 
     def set_downloaded(self, state=True):
         self.downloaded = state
@@ -41,10 +47,10 @@ class Chapter:
         self.converted = False
 
     def get_download_path(self, base_path: str) -> str:
-        return os.path.join(self.manga_ref.get_download_path(base_path), self.get_title())
+        return os.path.join(self.manga.get_download_path(base_path), self.get_title())
 
     def get_pdf_path(self, base_path: str) -> str:
-        return self.manga_ref.get_pdf_path(base_path)
+        return self.manga.get_pdf_path(base_path)
 
     def get_title(self) -> str:
         return make_path_os_safe(self.title)
@@ -89,33 +95,33 @@ class Chapter:
         builder.setTitle(self.title)
         if len(self.pages) > 0:
             for i in range(len(self.pages)):
-                width, height = Image.open(BytesIO(self.pages[i])).size
-                builder.setPageSize((width, height))
-                builder.drawImage(ImageReader(Image.open(BytesIO(self.pages[i]))), 0, 0)
+                image = Image.open(BytesIO(self.pages[i]))
+                builder.setPageSize(image.size)
+                builder.drawImage(ImageReader(image), 0, 0)
                 builder.showPage()
         else:
             images_dir = self.get_download_path(base_path)
             if not os.path.isdir(images_dir):
                 logger.warning(_('Could not convert to PDF, source path with images does not exist or images not downloaded'))
-                return False, pdf_dir
+                return False, pdf_path
             try:
-                files = [os.path.join(images_dir, f) for f in os.listdir(images_dir) if os.path.isfile(os.path.join(images_dir, f))]
+                files = [os.path.join(images_dir, f) for f in os.listdir(images_dir)
+                         if os.path.isfile(os.path.join(images_dir, f))]
                 files = sorted(files)
                 for i in range(len(files)):
-                    width, height = Image.open(files[i]).size
-                    builder.setPageSize((width, height))
+                    builder.setPageSize(Image.open(files[i]).size)
                     builder.drawImage(files[i], 0, 0)
                     builder.showPage()
             except Exception as e:
                 logger.error(_(F'Could not save PDF to {pdf_path}\nError message: {e}'))
-                return False, pdf_dir
+                return False, pdf_path
 
         if not os.path.exists(os.path.dirname(pdf_path)):
             os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
-        self.converted = True
         builder.save()
+        self.converted = True
         logger.info(_(F'PDF saved to a {pdf_path} file.'))
-        return True, pdf_dir
+        return True, pdf_path
 
     def chapter_images_present(self, base_path) -> bool:
         images_dir = self.get_download_path(base_path)
@@ -131,9 +137,8 @@ class Chapter:
 
 
 class Manga:
-
     def __init__(self, title, url, manga_site) -> None:
-        self.site_ref = manga_site  # type: MangaSite
+        self.manga_site = manga_site  # type: MangaSite
         self.title = title          # type: str
         self.url = url              # type: str
         self.author = ''            # type: str
@@ -150,10 +155,10 @@ class Manga:
         self.downloaded = False
 
     def get_download_path(self, base_path: str) -> str:
-        return os.path.join(base_path, 'downloaded', self.site_ref.site_name, self.get_title())
+        return os.path.join(base_path, 'downloaded', self.manga_site.site_name, self.get_title())
 
     def get_pdf_path(self, base_path: str) -> str:
-        return os.path.join(base_path, 'converted', self.site_ref.site_name, self.get_title())
+        return os.path.join(base_path, 'converted', self.manga_site.site_name, self.get_title())
 
     def get_title(self) -> str:
         return make_path_os_safe(self.title)
@@ -189,7 +194,6 @@ class Manga:
 
 
 class MangaSite:
-
     def __init__(self, site_name=None) -> None:
         self.site_name = site_name      # type: str
         self.url = None                 # type: str

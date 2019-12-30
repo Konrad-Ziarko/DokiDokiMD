@@ -167,7 +167,7 @@ class DDMDController:
         crawler = self.__get_crawler(site.site_name)
         if crawler:
             crawler.download(chapter)
-            chapter.set_downloaded()
+            chapter.set_downloaded(True)
             return chapter
 
     def store_sites(self) -> bool:
