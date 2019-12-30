@@ -1,6 +1,4 @@
-import imghdr
 import os
-from io import BytesIO
 from typing import List, Dict, Tuple, Union
 
 from dokidokimd import DATA_DIR

@@ -94,8 +94,8 @@ class Chapter:
         builder = Canvas(pdf_path, pageCompression=False, pagesize=A4)
         builder.setTitle(self.title)
         if len(self.pages) > 0:
-            for i in range(len(self.pages)):
-                image = Image.open(BytesIO(self.pages[i]))
+            for i, page in enumerate(self.pages):
+                image = Image.open(BytesIO(page))
                 builder.setPageSize(image.size)
                 builder.drawImage(ImageReader(image), 0, 0)
                 builder.showPage()
@@ -108,7 +108,7 @@ class Chapter:
                 files = [os.path.join(images_dir, f) for f in os.listdir(images_dir)
                          if os.path.isfile(os.path.join(images_dir, f))]
                 files = sorted(files)
-                for i in range(len(files)):
+                for i, file in enumerate(files):
                     builder.setPageSize(Image.open(files[i]).size)
                     builder.drawImage(files[i], 0, 0)
                     builder.showPage()
