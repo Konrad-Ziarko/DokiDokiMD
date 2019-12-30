@@ -109,8 +109,8 @@ class Chapter:
                          if os.path.isfile(os.path.join(images_dir, f))]
                 files = sorted(files)
                 for i, file in enumerate(files):
-                    builder.setPageSize(Image.open(files[i]).size)
-                    builder.drawImage(files[i], 0, 0)
+                    builder.setPageSize(Image.open(file).size)
+                    builder.drawImage(file, 0, 0)
                     builder.showPage()
             except Exception as e:
                 logger.error(_(F'Could not save PDF to {pdf_path}\nError message: {e}'))
