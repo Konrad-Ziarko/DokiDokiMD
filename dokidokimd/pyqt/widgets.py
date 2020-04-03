@@ -1,6 +1,5 @@
 import functools
 import os
-import shutil
 from sys import platform
 from typing import Dict
 
@@ -10,7 +9,7 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
     QListWidgetItem, QLineEdit, QProgressBar
 
-from dokidokimd.pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR
+from dokidokimd.pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR, QTIMER_REMOVE_TASK_TIMEOUT
 from dokidokimd.controller import DDMDController
 from dokidokimd.tools.ddmd_logger import get_logger
 from dokidokimd.tools.misc import get_resource_path
@@ -50,24 +49,27 @@ class MangaSiteWidget(QWidget):
         self.threads = dict()                           # type: Dict
 
         root_layout = QVBoxLayout(self)
-        top_part_of_root = QHBoxLayout()
-        middle_part_of_root = QHBoxLayout()
-        bottom_part_of_root = QHBoxLayout()
+        manga_site_progress_layout = QHBoxLayout()
+        filter_mangas_layout = QHBoxLayout()
+        manga_chapter_layout = QHBoxLayout()
+        task_information_layout = QHBoxLayout()
 
-        root_layout.addLayout(top_part_of_root)
-        root_layout.addLayout(middle_part_of_root)
-        root_layout.addLayout(bottom_part_of_root)
+        root_layout.addLayout(manga_site_progress_layout)
+        root_layout.addLayout(filter_mangas_layout)
+        root_layout.addLayout(manga_chapter_layout)
+        root_layout.addLayout(task_information_layout)
 
         left_part_of_top = QVBoxLayout()
         right_part_of_top = QVBoxLayout()
-        top_part_of_root.addLayout(left_part_of_top)
-        top_part_of_root.addLayout(right_part_of_top)
+        manga_site_progress_layout.addLayout(left_part_of_top)
+        manga_site_progress_layout.addLayout(right_part_of_top)
         search_part = QHBoxLayout()
         left_part_of_top.addLayout(search_part)
         self.setLayout(root_layout)
 
         self.combo_box_sites = QComboBox()
         btn_crawl_site = QPushButton()
+        self.tasks_list = ListWidget(_('No tasks'))
         self.mangas_list = ListWidget(_('No mangas'))
         self.filter_mangas_textbox = QLineEdit()
         self.chapters_list = ListWidget(_('No chapters'))
@@ -102,7 +104,7 @@ class MangaSiteWidget(QWidget):
         self.filter_mangas_textbox.setToolTip(_('Filter'))
         self.filter_mangas_textbox.setPlaceholderText(_('Search manga...'))
         self.filter_mangas_textbox.textChanged.connect(self.apply_filter)
-        middle_part_of_root.addWidget(self.filter_mangas_textbox)
+        filter_mangas_layout.addWidget(self.filter_mangas_textbox)
         # endregion
 
         # region list widget for mangas
@@ -115,7 +117,7 @@ class MangaSiteWidget(QWidget):
                 self.manga_context_menu.exec_(QCursor.pos())
             )
         )
-        bottom_part_of_root.addWidget(self.mangas_list)
+        manga_chapter_layout.addWidget(self.mangas_list)
         # endregion
 
         # region list widget for manga chapters
@@ -125,7 +127,12 @@ class MangaSiteWidget(QWidget):
         self.chapters_list.customContextMenuRequested.connect(
             lambda: self.chapter_context_menu.exec_(QCursor.pos())
         )
-        bottom_part_of_root.addWidget(self.chapters_list)
+        manga_chapter_layout.addWidget(self.chapters_list)
+        # endregion
+
+        # region tasks list widget
+        task_information_layout.addWidget(self.tasks_list)
+        self.tasks_list.setMaximumHeight(100)
         # endregion
 
         # region Manga contextmenu
@@ -227,14 +234,21 @@ class MangaSiteWidget(QWidget):
         self.mangas_list.item(index).setSelected(True)
 
     # region Thread slots
-    def single_thread_message(self, message):
-        self.parent().show_msg_on_status_bar(message)
-        self.repaint_chapters()
-
     def group_of_threads_finished(self, thread_name):
         self.threads.pop(thread_name)
         self.parent().show_msg_on_status_bar(_('Job finished'))
         self.repaint_chapters()
+
+    def task_add_to_list(self, task_id: int, uuid: int, msg: str):
+        item = QListWidgetItem('Task [{}]: {}'.format(task_id, msg))
+        item.setData(QtCore.Qt.UserRole, uuid)
+        self.tasks_list.addItem(item)
+
+    def remove_task_from_list(self, uuid: int):
+        for tasks_entry in self.tasks_list.findItems('*', Qt.MatchWildcard):
+            entry_uuid = tasks_entry.data(QtCore.Qt.UserRole)
+            if entry_uuid == uuid:
+                self.tasks_list.takeItem(self.tasks_list.row(tasks_entry))
 
     # endregion
 
@@ -252,8 +266,7 @@ class MangaSiteWidget(QWidget):
         self.add_to_progress_max(len(chapters))
         self.parent().show_msg_on_status_bar(message.format(
             self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = GroupOfThreads(self.ddmd, single_thread_class, self.single_thread_message, chapters, self.add_progress,
-                           self.ddmd.config.max_threads)
+        t = GroupOfThreads(self.ddmd, single_thread_class, chapters, self.task_add_to_list, self.signle_task_finished)
         self.threads[str(t)] = t
         t.set_name(str(t))
         t.message.connect(self.group_of_threads_finished)
@@ -379,8 +392,9 @@ class MangaSiteWidget(QWidget):
     # endregion
 
     # region progress bar actions
-    def add_progress(self):
+    def signle_task_finished(self, uuid: int):
         self.progress_bar.setValue(self.progress_bar.value() + 1)
+        QtCore.QTimer.singleShot(QTIMER_REMOVE_TASK_TIMEOUT, lambda: self.remove_task_from_list(uuid))
 
     def add_to_progress_max(self, value: int):
         self.progress_bar.setMaximum(self.progress_bar.maximum() + value)

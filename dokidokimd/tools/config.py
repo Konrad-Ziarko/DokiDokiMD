@@ -19,7 +19,7 @@ class ConfigManager(object):
         self._sot = False               # type: bool
         self._dark_mode = False         # type: bool
         self._db_path = ''              # type: str
-        self._max_threads = 10          # type: int
+        self._max_threads = 2           # type: int
         try:
             self.config.read(self.config_path)
             if not self.config.has_section('Window'):
