@@ -55,8 +55,6 @@ To post any issue use available issue templates:
 - [Selenium](https://github.com/SeleniumHQ/selenium)
 - [reportlab](https://pypi.org/project/reportlab/)
 - [PyQt5](https://pypi.org/project/PyQt5/)
-- [configobj](https://pypi.org/project/configobj/)
-- [six](https://pypi.org/project/six/)
 - [Pillow](https://pypi.org/project/Pillow/)
 - [lxml](https://pypi.org/project/lxml/)
 - [requests](https://pypi.org/project/requests/)

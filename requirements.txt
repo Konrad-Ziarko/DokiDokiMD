@@ -1,5 +1,4 @@
 selenium>=3.141.0
-six>=1.11.0
 Pillow>=6.0.0
 reportlab>=3.5.23
 lxml>=4.3.3
