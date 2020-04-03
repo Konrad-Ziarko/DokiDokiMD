@@ -45,5 +45,5 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     test_suite='test',
-    python_requires='>=3',
+    python_requires='>=3', install_requires=['lxml', 'requests', 'PyQt5', 'selenium', 'reportlab', 'Pillow']
 )
