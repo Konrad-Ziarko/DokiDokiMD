@@ -1,11 +1,12 @@
 import configparser
 import os
 
-from dokidokimd import DATA_DIR
 from dokidokimd.tools.ddmd_logger import get_logger
 from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
+
+DATA_DIR = 'ddmd_data'
 
 
 def get_sites_path(base_path: str) -> str:
