@@ -1,7 +1,7 @@
 import os
 import logging
 
-PROJECT_NAME = "DokiDokiMD"
+PROJECT_NAME = 'DokiDokiMD'
 
 
 def init_logger(cwd) -> logging.Logger:

@@ -8,6 +8,10 @@ from dokidokimd.tools.translator import translate as _
 logger = get_logger(__name__)
 
 
+def get_sites_path(base_path: str) -> str:
+    return os.path.join(base_path, DATA_DIR, 'sites')
+
+
 class ConfigManager(object):
     def __init__(self, cwd):
         path = os.path.join(cwd, DATA_DIR)
@@ -16,10 +20,17 @@ class ConfigManager(object):
         self.config_path = os.path.join(path, 'ddmd.ini')
         self.config = configparser.ConfigParser()
 
-        self._sot = False               # type: bool
-        self._dark_mode = False         # type: bool
-        self._db_path = ''              # type: str
-        self._max_threads = 2           # type: int
+        self._default_sot = False                       # type: bool
+        self._default_dark_mode = True                  # type: bool
+        self._default_db_path = get_sites_path(path)    # type: str
+        self._default_max_threads = 5                   # type: int
+        self._default_log_level = 2                     # type: int
+
+        self._sot = self._default_sot                   # type: bool
+        self._dark_mode = self._default_dark_mode       # type: bool
+        self._db_path = self._default_db_path           # type: str
+        self._max_threads = self._default_max_threads   # type: int
+        self._log_level = self._default_log_level       # type: int
         try:
             self.config.read(self.config_path)
             if not self.config.has_section('Window'):
@@ -84,25 +95,25 @@ class ConfigManager(object):
         try:
             self.sot = self.config.getboolean('Window', 'stay_on_top')
         except (configparser.NoOptionError, ValueError):
-            self.sot = False
+            self.sot = self._default_sot
         try:
             self.dark_mode = self.config.getboolean('Window', 'dark_mode')
         except (configparser.NoOptionError, ValueError):
-            self.dark_mode = False
+            self.dark_mode = self._default_dark_mode
         try:
             self.log_level = self.config.getint('Window', 'log_level')
             if not 0 < self.log_level < 6:
-                self.log_level = 2
+                self.log_level = self._default_log_level
         except (configparser.NoOptionError, ValueError):
-            self.log_level = 2
+            self.log_level = self._default_log_level
         try:
             self.db_path = self.config.get('Manga', 'db_path')
         except (configparser.NoOptionError, ValueError):
-            self.db_path = ''
+            self.db_path = self._default_db_path
         try:
             self.max_threads = self.config.getint('Manga', 'max_threads')
         except (configparser.NoOptionError, ValueError):
-            self.max_threads = 10
+            self.max_threads = self._default_max_threads
 
     def write_config(self):
         with open(self.config_path, 'w') as configfile:

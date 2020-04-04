@@ -29,7 +29,7 @@ class SeleniumDriver(object):
         firefox_profile.set_preference('permissions.default.image', 2)
         firefox_profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
         options = Options()
-        options.add_argument("--headless")
+        options.add_argument('--headless')
         self.driver = webdriver.Firefox(options=options, firefox_profile=firefox_profile, service_log_path=os.path.devnull)
         self.driver.get('https://www.python.org')
         return self.driver
@@ -42,15 +42,22 @@ class BaseCrawler:
     __metaclass__ = ABCMeta
     @abstractmethod
     def crawl_index(self, manga_site: MangaSite) -> None:
+        """
+        Fills up provided manga_site object with mangas list
+        """
         raise NotImplementedError
 
     @abstractmethod
     def crawl_detail(self, manga: Manga) -> None:
+        """
+        Fills up provided manga with chapters list
+        """
         raise NotImplementedError
 
     @abstractmethod
     def download(self, chapter: Chapter) -> int:
         """
+        Fills up provided chapter object with pages(images)
         :return: number of downloaded pages
         """
         raise NotImplementedError
@@ -183,7 +190,7 @@ def wait_for_page(driver, x_path):
     wait = True
     while wait:
         sleep(0.5)
-        if len(html.fromstring(driver.find_element_by_xpath("//*").get_attribute("outerHTML")).xpath(x_path)) != 0:
+        if len(html.fromstring(driver.find_element_by_xpath('//*').get_attribute('outerHTML')).xpath(x_path)) != 0:
             wait = False
 
 
@@ -207,7 +214,7 @@ class KissMangaCrawler(BaseCrawler):
                 wait_for_page(driver, self.re_index_path)
                 manga_site.url = self.base_url
                 while collected_all_pages is False:
-                    content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
+                    content = driver.find_element_by_xpath('//*').get_attribute('outerHTML')
                     tree = html.fromstring(content)
                     for element in tree.xpath(self.re_index_path):
                         title = str(element.xpath('text()')[0]).strip().replace('\t', ' ')
@@ -229,7 +236,7 @@ class KissMangaCrawler(BaseCrawler):
             with SeleniumDriver() as driver:
                 driver.get(start_url)
                 wait_for_page(driver, self.re_chapter_path)
-                content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
+                content = driver.find_element_by_xpath('//*').get_attribute('outerHTML')
                 tree = html.fromstring(content)
                 # crawl for manga chapters
                 for element in tree.xpath(self.re_chapter_path):
@@ -248,7 +255,7 @@ class KissMangaCrawler(BaseCrawler):
                 driver.get(start_url)
                 wait_for_page(driver, self.re_download_path)
                 chapter.clear_state()
-                content = driver.find_element_by_xpath("//*").get_attribute("outerHTML")
+                content = driver.find_element_by_xpath('//*').get_attribute('outerHTML')
                 tree = html.fromstring(content)
                 for element in tree.xpath(self.re_download_path):
                     image_src = str(element.xpath('@src')[0])

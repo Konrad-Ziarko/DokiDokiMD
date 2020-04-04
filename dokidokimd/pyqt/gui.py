@@ -16,15 +16,16 @@ logger = get_logger(__name__)
 
 
 class GUI(QMainWindow):
-    def __init__(self, qt_app, title, config, exe_path, start_cwd):
+    def __init__(self, qt_app, title, config):
         QMainWindow.__init__(self)
         self.qt_app = qt_app
         self.original_palette = self.qt_app.palette()
         self.config = config
-        self.controller = DDMDController(self.config, start_cwd)
+        self.controller = DDMDController(self.config)
         self.title = title
         self.setWindowTitle(self.title)
-        self.main_widget = MangaSiteWidget(self, self.controller)
+        self.main_widget = MangaSiteWidget(self.controller)
+        self.main_widget.connect_actions(self.show_msg_on_status_bar, self.lock_gui, self.unlock_gui)
         self.setCentralWidget(self.main_widget)
         self.styleSheet()
         self.init_menu_bar()
@@ -80,7 +81,8 @@ class GUI(QMainWindow):
         if path:
             self.config.db_path = path
             self.controller.load_db()
-            self.main_widget = MangaSiteWidget(self, self.controller)
+            self.main_widget = MangaSiteWidget(self.controller)
+            self.main_widget.connect_actions(self.show_msg_on_status_bar, self.lock_gui, self.unlock_gui)
             self.setCentralWidget(self.main_widget)
             self.show_msg_on_status_bar(_(F'Loaded DB from {self.config.db_path}'))
 
@@ -116,6 +118,12 @@ class GUI(QMainWindow):
             self.setWindowFlags(flags & ~hint)
         self.show()
 
+    def lock_gui(self):
+        self.setDisabled(True)
+
+    def unlock_gui(self):
+        self.setEnabled(True)
+
     def show_msg_on_status_bar(self, string: str = ''):
         self.statusBar().showMessage(string)
 
@@ -126,11 +134,11 @@ class GUI(QMainWindow):
         QMessageBox.question(self, title, msg, QMessageBox.Ok)
 
 
-def start_gui(title, config, exe_path, start_cwd):
+def start_gui(title, config):
     qt_app = QApplication(sys.argv)
     qt_app.setStyle('fusion')
     qt_app.setWindowIcon(QIcon(get_resource_path('icons/favicon.png')))
-    gui = GUI(qt_app, title, config, exe_path, start_cwd)
-    gui.show_msg_on_status_bar("Some websites, like KissManga, index more than 10min!")
+    gui = GUI(qt_app, title, config)
+    gui.show_msg_on_status_bar('Some websites, like KissManga, index more than 10min!')
     atexit.register(gui.before_exit)
     sys.exit(qt_app.exec_())

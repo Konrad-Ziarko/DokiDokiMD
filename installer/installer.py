@@ -1,12 +1,13 @@
 import shutil
-from os import popen, path
+import os
+from os import popen
 
 PROGRAM_NAME = 'DokiDokiMD'
 
 run_cmd = F'python -m PyInstaller -y -F -w --name={PROGRAM_NAME} ' \
-          F'..{path.sep}main.py ' \
-          F'-i "..{path.sep}icons{path.sep}favicon.ico" ' \
-          F'--add-data "..{path.sep}icons";"icons" '
+          F'{os.path.join("..", "main.py")} ' \
+          F'-i {os.path.join("..", "icons", "favicon.ico")} ' \
+          F'--add-data {os.path.join("..", "icons")};"icons" '
 
 
 process = popen(run_cmd)
@@ -15,11 +16,12 @@ process.close()
 
 shutil.rmtree('build')
 try:
-    shutil.move(F'dist{path.sep}{PROGRAM_NAME}', '.')
-except Exception as e:
-    print(F'Could not move files under dist{path.sep}{PROGRAM_NAME}')
+    os.remove(F'{PROGRAM_NAME}.exe')
+    os.remove(F'{PROGRAM_NAME}.spec')
+finally:
+    pass
 try:
-    shutil.move(F'dist{path.sep}{PROGRAM_NAME}.exe', '.')
+    shutil.move(os.path.join('dist', F'{PROGRAM_NAME}.exe'), '.')
 except Exception as e:
-    print(F'Could not move dist{path.sep}{PROGRAM_NAME}.exe')
+    print(F'Could not move {os.path.join("dist", F"{PROGRAM_NAME}.exe")}: {e}')
 shutil.rmtree('dist')

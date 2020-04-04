@@ -36,9 +36,6 @@ class GroupOfThreads(QThread):
         self.threads_max = self.ddmd.config.max_threads
         self.counter = 0
 
-    def set_name(self, thread_name):
-        self.name = thread_name
-
     def run(self):
         if len(self.chapters) > self.threads_max:
             for i in range(0, len(self.chapters), self.threads_max):
@@ -46,7 +43,7 @@ class GroupOfThreads(QThread):
                 self.start_threads(chunk)
         else:
             self.start_threads(self.chapters)
-        self.message.emit(self.name)
+        self.message.emit(str(self))
         self.finished.emit(len(self.chapters))
 
     def start_threads(self, chapters):
@@ -63,7 +60,6 @@ class GroupOfThreads(QThread):
 
 
 class SingleChapterDownloadThread(SingleThread):
-
     def run(self):
         try:
             try:
@@ -82,7 +78,6 @@ class SingleChapterDownloadThread(SingleThread):
 
 
 class SingleChapterSaveThread(SingleThread):
-
     def run(self):
         try:
             if not self.chapter.in_memory:
@@ -105,7 +100,6 @@ class SingleChapterSaveThread(SingleThread):
 
 
 class SingleChapterConvertThread(SingleThread):
-
     def run(self):
         try:
             if not self.chapter.in_memory and not self.chapter.chapter_images_present(self.ddmd.sites_location):

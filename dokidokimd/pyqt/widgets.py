@@ -9,22 +9,38 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
     QListWidgetItem, QLineEdit, QProgressBar
 
-from dokidokimd.pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR, QTIMER_REMOVE_TASK_TIMEOUT
 from dokidokimd.controller import DDMDController
+from dokidokimd.pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR, QTIMER_REMOVE_TASK_TIMEOUT
 from dokidokimd.tools.ddmd_logger import get_logger
 from dokidokimd.tools.misc import get_resource_path
-from dokidokimd.tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, SingleChapterConvertThread, \
-    GroupOfThreads
+from dokidokimd.tools.thread_helpers import SingleChapterDownloadThread, SingleChapterSaveThread, \
+    SingleChapterConvertThread, GroupOfThreads
 from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
 
-def manga_list_selected(func):
+def nop():
+    pass
+
+
+def ensure_manga_selected(func):
     @functools.wraps(func)
     def func_wrapper(*a, **kw):
         if a[0].mangas_list.currentRow() != -1:
             return func(*a, **kw)
+        else:
+            return nop()
+    return func_wrapper
+
+
+def ensure_chapter_selected(func):
+    @functools.wraps(func)
+    def func_wrapper(*a, **kw):
+        if a[0].chapters_list.currentRow() != -1:
+            return func(*a, **kw)
+        else:
+            return nop()
     return func_wrapper
 
 
@@ -41,12 +57,36 @@ class ListWidget(QListWidget):
         p.drawText(self.rect(), Qt.AlignCenter, self.default_string)
 
 
+class FilterMangasTextBox(QLineEdit):
+    def __init__(self, apply_filter):
+        QLineEdit.__init__(self)
+        self.setToolTip(_('Filter'))
+        self.setPlaceholderText(_('Search manga...'))
+        self.textChanged.connect(apply_filter)
+
+
+class TasksProgressBar(QProgressBar):
+    def __init__(self):
+        QProgressBar.__init__(self)
+        self.setValue(0)
+        self.setMinimum(0)
+        self.setMaximum(0)
+
+
 class MangaSiteWidget(QWidget):
-    def __init__(self, parent, controller):
-        QWidget.__init__(self, parent)
+    def connect_actions(self, show_msg_on_status_bar, lock_gui, unlock_gui):
+        self.show_msg_on_status_bar = show_msg_on_status_bar
+        self.lock_gui = lock_gui
+        self.unlock_gui = unlock_gui
+
+    def __init__(self, controller):
+        QWidget.__init__(self)
         self.ddmd = controller                          # type: DDMDController
-        self.filter_text = ''                           # type: str
         self.threads = dict()                           # type: Dict
+
+        self.show_msg_on_status_bar = None
+        self.lock_gui = None
+        self.unlock_gui = None
 
         root_layout = QVBoxLayout(self)
         manga_site_progress_layout = QHBoxLayout()
@@ -71,7 +111,10 @@ class MangaSiteWidget(QWidget):
         btn_crawl_site = QPushButton()
         self.tasks_list = ListWidget(_('No tasks'))
         self.mangas_list = ListWidget(_('No mangas'))
-        self.filter_mangas_textbox = QLineEdit()
+
+        self.filter_mangas_textbox = FilterMangasTextBox(self.apply_filter)
+        filter_mangas_layout.addWidget(self.filter_mangas_textbox)
+
         self.chapters_list = ListWidget(_('No chapters'))
         self.manga_context_menu = QtWidgets.QMenu()
         self.chapter_context_menu = QtWidgets.QMenu()
@@ -85,10 +128,7 @@ class MangaSiteWidget(QWidget):
         # endregion
 
         # region progress bar
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setValue(0)
-        self.progress_bar.setMinimum(0)
-        self.progress_bar.setMaximum(0)
+        self.progress_bar = TasksProgressBar()
         right_part_of_top.addWidget(self.progress_bar)
         # endregion
 
@@ -100,15 +140,8 @@ class MangaSiteWidget(QWidget):
         search_part.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
 
-        # region textbox for manga filter
-        self.filter_mangas_textbox.setToolTip(_('Filter'))
-        self.filter_mangas_textbox.setPlaceholderText(_('Search manga...'))
-        self.filter_mangas_textbox.textChanged.connect(self.apply_filter)
-        filter_mangas_layout.addWidget(self.filter_mangas_textbox)
-        # endregion
-
         # region list widget for mangas
-        self.mangas_list.doubleClicked.connect(self.manga_double_clicked)
+        self.mangas_list.doubleClicked.connect(self.manga_download_clicked)
         self.mangas_list.clicked.connect(self.manga_selected)
         self.mangas_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.mangas_list.customContextMenuRequested.connect(
@@ -174,19 +207,19 @@ class MangaSiteWidget(QWidget):
 
         download_action = QAction(_('Download'), self)
         download_action.triggered.connect(
-            lambda: self.start_thread_for_chapter(SingleChapterDownloadThread, _('Downloading {} chapters...'))
+            lambda: self.start_working_threads(SingleChapterDownloadThread, _('Downloading {} chapters...'))
         )
         self.chapter_context_menu.addAction(download_action)
 
         save_action = QAction(_('Save on disk'), self)
         save_action.triggered.connect(
-            lambda: self.start_thread_for_chapter(SingleChapterSaveThread, _('Saving {} chapters...'))
+            lambda: self.start_working_threads(SingleChapterSaveThread, _('Saving {} chapters...'))
         )
         self.chapter_context_menu.addAction(save_action)
 
         convert_action = QAction(_('Convert to PDF'), self)
         convert_action.triggered.connect(
-            lambda: self.start_thread_for_chapter(SingleChapterConvertThread, _('Converting {} chapters...'))
+            lambda: self.start_working_threads(SingleChapterConvertThread, _('Converting {} chapters...'))
         )
         self.chapter_context_menu.addAction(convert_action)
         self.chapter_context_menu.addSeparator()
@@ -222,103 +255,117 @@ class MangaSiteWidget(QWidget):
         self.site_selected()
         # endregion
 
-    def repaint_chapters(self):
+    def reload_chapters_list(self):
         indexes = [idx.row() for idx in self.chapters_list.selectedIndexes()]
         self.load_stored_chapters(self.ddmd.get_current_manga())
         for i in indexes:
             self.chapters_list.item(i).setSelected(True)
 
-    def repaint_mangas(self):
+    def reload_mangas_list(self):
         index = self.mangas_list.currentRow()
-        self.load_stored_mangas(self.ddmd.get_current_site())
+        self.load_stored_mangas(site=self.ddmd.get_current_site())
         self.mangas_list.item(index).setSelected(True)
 
     # region Thread slots
     def group_of_threads_finished(self, thread_name):
         self.threads.pop(thread_name)
-        self.parent().show_msg_on_status_bar(_('Job finished'))
-        self.repaint_chapters()
+        self.show_msg_on_status_bar(_('Job finished'))
+        self.reload_chapters_list()
 
     def task_add_to_list(self, task_id: int, uuid: int, msg: str):
+        """
+        Add message entry to 'task log' and store it with thread uuid for later identification
+        uuid jest 64 digit long so tasks are also numerated with task_id
+        This separation is necessary because each group of tasks does not share task counter
+            and their taks_id could be ambiguous
+        """
         item = QListWidgetItem('Task [{}]: {}'.format(task_id, msg))
         item.setData(QtCore.Qt.UserRole, uuid)
         self.tasks_list.addItem(item)
+        self.tasks_list.scrollToBottom()
 
     def remove_task_from_list(self, uuid: int):
+        """
+        Remove entries from 'task log' that were inserted by thread with matching uuid
+        """
         for tasks_entry in self.tasks_list.findItems('*', Qt.MatchWildcard):
+            # iterate over all items from list
             entry_uuid = tasks_entry.data(QtCore.Qt.UserRole)
             if entry_uuid == uuid:
                 self.tasks_list.takeItem(self.tasks_list.row(tasks_entry))
-
     # endregion
 
     # region chapters_list actions
+    @ensure_chapter_selected
     def chapter_clear_clicked(self):
         selected_chapters = self.chapters_list.selectedItems()
         for selected_chapter in selected_chapters:
             chapter = selected_chapter.data(QtCore.Qt.UserRole)
             chapter.clear_state()
-        self.repaint_chapters()
+        self.reload_chapters_list()
 
-    def start_thread_for_chapter(self, single_thread_class, message):
-        selected_chapters = self.chapters_list.selectedItems()
-        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
+    @ensure_chapter_selected
+    def start_working_threads(self, thread_job_type, message):
+        """
+        This method is invoked by context menu actions
+        It starts threads and they  context menu entry was selected
+        """
+        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in self.chapters_list.selectedItems()]
         self.add_to_progress_max(len(chapters))
-        self.parent().show_msg_on_status_bar(message.format(
+        self.show_msg_on_status_bar(message.format(
             self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = GroupOfThreads(self.ddmd, single_thread_class, chapters, self.task_add_to_list, self.signle_task_finished)
+        t = GroupOfThreads(self.ddmd, thread_job_type, chapters, self.task_add_to_list, self.signle_task_finished)
         self.threads[str(t)] = t
-        t.set_name(str(t))
         t.message.connect(self.group_of_threads_finished)
         t.finished.connect(self.remove_from_progress_max)
         t.start()
 
+    @ensure_chapter_selected
     def chapter_double_clicked(self):
         chapter_index = self.chapters_list.currentRow()
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_chapter(chapter)
-        self.start_thread_for_chapter(SingleChapterDownloadThread, _('Downloading {} chapters...'))
+        self.start_working_threads(SingleChapterDownloadThread, _('Downloading {} chapters...'))
 
-    @manga_list_selected
+    @ensure_chapter_selected
     def mark_as_downloaded(self):
         if self.mangas_list.currentRow() != -1:
             selected_chapters = self.chapters_list.selectedItems()
             chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
             for chapter in chapters:
                 chapter.set_downloaded(True)
-            self.repaint_chapters()
+            self.reload_chapters_list()
 
-    @manga_list_selected
+    @ensure_chapter_selected
     def mark_as_converted(self):
         if self.mangas_list.currentRow() != -1:
             selected_chapters = self.chapters_list.selectedItems()
             chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
             for chapter in chapters:
                 chapter.converted = True
-            self.repaint_chapters()
-
+            self.reload_chapters_list()
     # endregion
 
     # region manga_list actions
+    @ensure_manga_selected
     def manga_clear_clicked(self):
         manga = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
         manga.clear_state()
-        self.repaint_mangas()
+        self.reload_mangas_list()
         self.load_stored_chapters()
 
+    @ensure_manga_selected
     def manga_download_clicked(self):
         self.download_manga(self.mangas_list.currentRow())
 
-    def manga_double_clicked(self):
-        manga_index = self.mangas_list.currentRow()
-        self.download_manga(manga_index)
-
+    @ensure_manga_selected
     def manga_selected(self):
         manga_index = self.mangas_list.currentRow()
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_manga(manga)
         self.load_stored_chapters()
 
+    @ensure_manga_selected
     def download_manga(self, manga_index):
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_manga(manga)
@@ -342,16 +389,15 @@ class MangaSiteWidget(QWidget):
 
     def update_chapters(self):
         try:
-            self.parent().setDisabled(True)
+            self.lock_gui()
             manga = self.ddmd.crawl_manga()
         except Exception as e:
             logger.warning(_(F'Could not download chapters for {self.ddmd.get_current_manga().title}, reason: {e}'))
-            self.parent().show_msg_on_status_bar(_(F'Could not download chapters for {self.ddmd.get_current_manga().title}'))
+            self.show_msg_on_status_bar(_(F'Could not download chapters for {self.ddmd.get_current_manga().title}'))
         else:
             self.load_stored_chapters(manga)
         finally:
-            self.parent().setEnabled(True)
-
+            self.unlock_gui()
     # endregion
 
     # region site_combobox actions
@@ -362,12 +408,12 @@ class MangaSiteWidget(QWidget):
         self.load_stored_mangas()
         self.chapters_list.clear()
 
-    def load_stored_mangas(self, site=None):
+    def load_stored_mangas(self, filter_text='', site=None):
         if not site:
             site = self.ddmd.get_current_site()
         self.mangas_list.clear()
         for manga in site.mangas:
-            if self.filter_text.lower() in manga.title.lower():
+            if filter_text.lower() in manga.title.lower():
                 item = QListWidgetItem(manga.title)
                 if manga.downloaded:
                     item.setForeground(QCOLOR_DOWNLOADED)
@@ -379,16 +425,15 @@ class MangaSiteWidget(QWidget):
 
     def update_mangas(self):
         try:
-            self.parent().setDisabled(True)
+            self.lock_gui()
             site = self.ddmd.crawl_site()
         except Exception as e:
             logger.warning(_(F'Could not refresh site, reason: {e}'))
-            self.parent().show_msg_on_status_bar(_('Could not refresh site, for more info look into log file.'))
+            self.show_msg_on_status_bar(_('Could not refresh site, for more info look into log file.'))
         else:
-            self.load_stored_mangas(site)
+            self.load_stored_mangas(site=site)
         finally:
-            self.parent().setEnabled(True)
-
+            self.unlock_gui()
     # endregion
 
     # region progress bar actions
@@ -401,49 +446,49 @@ class MangaSiteWidget(QWidget):
 
     def remove_from_progress_max(self, value: int):
         self.progress_bar.setMaximum(max(0, self.progress_bar.maximum() - value))
-
-    def set_progress(self, value: int):
-        self.progress_bar.setValue(value)
-
-    def set_progress_max(self, value: int):
-        self.progress_bar.setMaximum(value)
-
-    def clear_progress(self):
-        self.progress_bar.setValue(0)
-
     # endregion
 
-    @manga_list_selected
+    @ensure_manga_selected
     def open_file_explorer(self, level: str):
-        base_path = self.ddmd.sites_location
-        if level == 'M':
-            list_object = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
-        elif level == 'C':
-            list_object = self.chapters_list.item(self.chapters_list.currentRow()).data(QtCore.Qt.UserRole)
-        else:
-            return
-        path = list_object.get_download_path(base_path)
-        if platform == 'linux' or platform == 'linux2':
-            os.system(F'gio open "{path}"')
-        elif platform == 'win32':
-            os.system(F'explorer "{path}"')
+        try:
+            base_path = self.ddmd.sites_location
+            if level == 'M':
+                list_object = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
+            elif level == 'C':
+                list_object = self.chapters_list.item(self.chapters_list.currentRow()).data(QtCore.Qt.UserRole)
+            else:
+                return
+            path = list_object.get_download_path(base_path)
+            if not os.path.exists(path):
+                path = list_object.get_pdf_path(base_path)
+            if platform == 'linux' or platform == 'linux2':
+                os.system(F'gio open "{path}"')
+            elif platform == 'win32':
+                os.system(F'explorer "{path}"')
+        except Exception as e:
+            logger.warning(_(F'There was a problem while opening manga: [{e}]'))
 
-    @manga_list_selected
+    @ensure_manga_selected
     def open_terminal(self, level: str):
-        base_path = self.ddmd.sites_location
-        if level == 'M':
-            list_object = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
-        elif level == 'C':
-            list_object = self.chapters_list.item(self.chapters_list.currentRow()).data(QtCore.Qt.UserRole)
-        else:
-            return
-        path = list_object.get_download_path(base_path)
-        if platform == 'linux' or platform == 'linux2':
-            os.system(F'gnome-terminal --working-directory="{path}"')
-        elif platform == 'win32':
-            os.system(F'start cmd /K "cd /d {path}"')
+        try:
+            base_path = self.ddmd.sites_location
+            if level == 'M':
+                list_object = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
+            elif level == 'C':
+                list_object = self.chapters_list.item(self.chapters_list.currentRow()).data(QtCore.Qt.UserRole)
+            else:
+                return
+            path = list_object.get_download_path(base_path)
+            if not os.path.exists(path):
+                path = list_object.get_pdf_path(base_path)
+            if platform == 'linux' or platform == 'linux2':
+                os.system(F'gnome-terminal --working-directory="{path}"')
+            elif platform == 'win32':
+                os.system(F'start cmd /K "cd /d {path}"')
+        except Exception as e:
+            logger.warning(_(F'There was a problem while opening manga: [{e}]'))
 
-    @manga_list_selected
+    @ensure_manga_selected
     def remove_from_disk(self, level: str):
         base_path = self.ddmd.sites_location
         if level == 'M':
@@ -458,5 +503,4 @@ class MangaSiteWidget(QWidget):
             obj.remove_from_disk(base_path)
 
     def apply_filter(self):
-        self.filter_text = self.filter_mangas_textbox.text()
-        self.load_stored_mangas()
+        self.load_stored_mangas(filter_text=self.filter_mangas_textbox.text())

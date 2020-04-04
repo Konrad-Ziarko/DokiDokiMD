@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class Chapter:
     def __init__(self, manga, title: str = None) -> None:
-        self.manga = manga      # type: Manga
+        self.manga = manga          # type: Manga
         self.title = title          # type: str
         self.url = None             # type: str
         self.pages = []             # type: List[bytes]
@@ -139,16 +139,16 @@ class Chapter:
 class Manga:
     def __init__(self, title, url, manga_site) -> None:
         self.manga_site = manga_site  # type: MangaSite
-        self.title = title          # type: str
-        self.url = url              # type: str
-        self.author = ''            # type: str
-        self.cover = ''             # type: str
-        self.status = ''            # type: str
-        self.genres = ''            # type: str
-        self.summary = ''           # type: str
-        self.chapters = []          # type: List[Chapter]
+        self.title = title            # type: str
+        self.url = url                # type: str
+        self.author = ''              # type: str
+        self.cover = ''               # type: str
+        self.status = ''              # type: str
+        self.genres = ''              # type: str
+        self.summary = ''             # type: str
+        self.chapters = []            # type: List[Chapter]
 
-        self.downloaded = False     # type: bool
+        self.downloaded = False       # type: bool
 
     def clear_state(self):
         self.chapters = []
