@@ -1,8 +1,9 @@
 import os
 import re
 import sys
-from gc import get_referents
 from types import ModuleType, FunctionType
+
+from gc import get_referents
 
 BLACKLIST = type, ModuleType, FunctionType
 

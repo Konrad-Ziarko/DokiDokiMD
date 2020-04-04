@@ -1,11 +1,13 @@
+import traceback
+from functools import lru_cache
 from typing import List, Dict, Union
 
 from dokidokimd.models import MangaSite, Chapter, Manga
 from dokidokimd.tools.config import ConfigManager
 from dokidokimd.tools.crawler import MangaCrawlersMap, BaseCrawler
 from dokidokimd.tools.ddmd_logger import get_logger, set_logger_level
-from dokidokimd.tools.translator import translate as _
 from dokidokimd.tools.storage import MangaStorage
+from dokidokimd.tools.translator import translate as _
 
 logger = get_logger(__name__)
 
@@ -56,6 +58,7 @@ class DDMDController:
     def _reset_cwd(self):
         self.cwd_chapter = self.cwd_manga = self.cwd_site = None
 
+    @lru_cache()
     def __get_crawler(self, site_name: str) -> Union[BaseCrawler, bool]:
         """
         This method gets proper crawlers for a given site
@@ -109,11 +112,13 @@ class DDMDController:
             manga.downloaded = True
             return manga
 
-    def crawl_chapter(self, chapter: Chapter) -> Chapter:
-        site = self.cwd_site
-        crawler = self.__get_crawler(site.site_name)
-        if crawler:
-            crawler.download(chapter)
-            chapter.set_downloaded(True)
-            return chapter
-
+    def crawl_chapter(self, chapter: Chapter):
+        try:
+            site = self.cwd_site
+            crawler = self.__get_crawler(site.site_name)
+            if crawler:
+                crawler.download(chapter)
+                chapter.set_downloaded(True)
+        except Exception as e:
+            logger.error(_(F'Error occurred while downloading chapter: {e}'))
+            logger.error(traceback.print_exc())

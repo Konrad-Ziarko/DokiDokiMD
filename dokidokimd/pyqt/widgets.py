@@ -4,10 +4,10 @@ from sys import platform
 from typing import Dict
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QModelIndex
 from PyQt5.QtGui import QPaintEvent, QPainter, QCursor, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QListWidget, QAction, \
-    QListWidgetItem, QLineEdit, QProgressBar
+    QListWidgetItem, QLineEdit, QProgressBar, QMenu
 
 from dokidokimd.controller import DDMDController
 from dokidokimd.pyqt.consts import QCOLOR_DOWNLOADED, QCOLOR_CONVERTERR, QTIMER_REMOVE_TASK_TIMEOUT
@@ -25,23 +25,31 @@ def nop():
 
 
 def ensure_manga_selected(func):
-    @functools.wraps(func)
-    def func_wrapper(*a, **kw):
-        if a[0].mangas_list.currentRow() != -1:
-            return func(*a, **kw)
-        else:
-            return nop()
-    return func_wrapper
+    try:
+        @functools.wraps(func)
+        def func_wrapper(*a, **kw):
+            if a[0].mangas_list.currentRow() != -1:
+                return func(*a, **kw)
+            else:
+                return nop()
+
+        return func_wrapper
+    except Exception as e:
+        logger.error(str(e))
 
 
 def ensure_chapter_selected(func):
-    @functools.wraps(func)
-    def func_wrapper(*a, **kw):
-        if a[0].chapters_list.currentRow() != -1:
-            return func(*a, **kw)
-        else:
-            return nop()
-    return func_wrapper
+    try:
+        @functools.wraps(func)
+        def func_wrapper(*a, **kw):
+            if a[0].chapters_list.currentRow() != -1:
+                return func(*a, **kw)
+            else:
+                return nop()
+
+        return func_wrapper
+    except Exception as e:
+        logger.error(str(e))
 
 
 class ListWidget(QListWidget):
@@ -73,6 +81,20 @@ class TasksProgressBar(QProgressBar):
         self.setMaximum(0)
 
 
+class SitesSelector(QComboBox):
+    def __init__(self, site_selected_action, sites):
+        QComboBox.__init__(self)
+        self.site_selected_action = site_selected_action
+        self.activated.connect(self.site_selected)
+        for idx, site in enumerate(sites):
+            self.addItem(F'{idx}:{site.site_name}({len(site.mangas)})', site)
+        self.setMaximumWidth(self.sizeHint().width())
+
+    def site_selected(self, site_index):
+        site = self.itemData(site_index, QtCore.Qt.UserRole)
+        self.site_selected_action(site)
+
+
 class MangaSiteWidget(QWidget):
     def connect_actions(self, show_msg_on_status_bar, lock_gui, unlock_gui):
         self.show_msg_on_status_bar = show_msg_on_status_bar
@@ -81,8 +103,8 @@ class MangaSiteWidget(QWidget):
 
     def __init__(self, controller):
         QWidget.__init__(self)
-        self.ddmd = controller                          # type: DDMDController
-        self.threads = dict()                           # type: Dict
+        self.ddmd = controller  # type: DDMDController
+        self.threads = dict()  # type: Dict
 
         self.show_msg_on_status_bar = None
         self.lock_gui = None
@@ -107,25 +129,8 @@ class MangaSiteWidget(QWidget):
         left_part_of_top.addLayout(search_part)
         self.setLayout(root_layout)
 
-        self.combo_box_sites = QComboBox()
-        btn_crawl_site = QPushButton()
-        self.tasks_list = ListWidget(_('No tasks'))
-        self.mangas_list = ListWidget(_('No mangas'))
-
         self.filter_mangas_textbox = FilterMangasTextBox(self.apply_filter)
         filter_mangas_layout.addWidget(self.filter_mangas_textbox)
-
-        self.chapters_list = ListWidget(_('No chapters'))
-        self.manga_context_menu = QtWidgets.QMenu()
-        self.chapter_context_menu = QtWidgets.QMenu()
-
-        # region combobox for manga sites
-        self.combo_box_sites.activated.connect(self.site_selected)
-        for idx, site in enumerate(self.ddmd.get_sites()):
-            self.combo_box_sites.addItem(F'{idx}:{site.site_name}({len(site.mangas)})', site)
-        self.combo_box_sites.setMaximumWidth(self.combo_box_sites.sizeHint().width())
-        search_part.addWidget(self.combo_box_sites)
-        # endregion
 
         # region progress bar
         self.progress_bar = TasksProgressBar()
@@ -133,39 +138,46 @@ class MangaSiteWidget(QWidget):
         # endregion
 
         # region button for search manga site
+        btn_crawl_site = QPushButton()
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
         btn_crawl_site.clicked.connect(self.update_mangas)
         btn_crawl_site.setIcon(QIcon(get_resource_path('icons/baseline_search_black_18dpx2.png')))
+        self.combo_box_sites = SitesSelector(self.site_selected, self.ddmd.get_sites())
+        search_part.addWidget(self.combo_box_sites)
         search_part.addWidget(btn_crawl_site)
         search_part.setAlignment(QtCore.Qt.AlignLeft)
         # endregion
 
+        # region tasks list widget
+        self.tasks_list = ListWidget(_('No tasks'))
+        self.tasks_list_context_menu = QMenu()
+        self.tasks_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.tasks_list.customContextMenuRequested.connect(self.open_tasks_list_context_menu)
+        task_information_layout.addWidget(self.tasks_list)
+        self.tasks_list.setMaximumHeight(100)
+        clear_tasks_log = QAction(_('Clear tasks log'), self)
+        clear_tasks_log.triggered.connect(lambda: self.tasks_list.clear())
+        self.tasks_list_context_menu.addAction(clear_tasks_log)
+        # endregion
+
         # region list widget for mangas
+        self.mangas_list = ListWidget(_('No mangas'))
+        self.manga_context_menu = QMenu()
         self.mangas_list.doubleClicked.connect(self.manga_download_clicked)
         self.mangas_list.clicked.connect(self.manga_selected)
         self.mangas_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.mangas_list.customContextMenuRequested.connect(
-            lambda: (
-                self.manga_selected(),
-                self.manga_context_menu.exec_(QCursor.pos())
-            )
-        )
+        self.mangas_list.customContextMenuRequested.connect(self.open_manga_context_menu)
         manga_chapter_layout.addWidget(self.mangas_list)
         # endregion
 
         # region list widget for manga chapters
+        self.chapters_list = ListWidget(_('No chapters'))
+        self.chapter_context_menu = QMenu()
         self.chapters_list.doubleClicked.connect(self.chapter_double_clicked)
         self.chapters_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.chapters_list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.chapters_list.customContextMenuRequested.connect(
-            lambda: self.chapter_context_menu.exec_(QCursor.pos())
-        )
+        self.chapters_list.customContextMenuRequested.connect(self.open_chapter_context_menu)
         manga_chapter_layout.addWidget(self.chapters_list)
-        # endregion
-
-        # region tasks list widget
-        task_information_layout.addWidget(self.tasks_list)
-        self.tasks_list.setMaximumHeight(100)
         # endregion
 
         # region Manga contextmenu
@@ -206,21 +218,15 @@ class MangaSiteWidget(QWidget):
         self.chapter_context_menu.addSeparator()
 
         download_action = QAction(_('Download'), self)
-        download_action.triggered.connect(
-            lambda: self.start_working_threads(SingleChapterDownloadThread, _('Downloading {} chapters...'))
-        )
+        download_action.triggered.connect(self.start_chapters_download)
         self.chapter_context_menu.addAction(download_action)
 
-        save_action = QAction(_('Save on disk'), self)
-        save_action.triggered.connect(
-            lambda: self.start_working_threads(SingleChapterSaveThread, _('Saving {} chapters...'))
-        )
+        save_action = QAction(_('Save images'), self)
+        save_action.triggered.connect(self.start_chapters_save)
         self.chapter_context_menu.addAction(save_action)
 
         convert_action = QAction(_('Convert to PDF'), self)
-        convert_action.triggered.connect(
-            lambda: self.start_working_threads(SingleChapterConvertThread, _('Converting {} chapters...'))
-        )
+        convert_action.triggered.connect(self.start_chapters_convert)
         self.chapter_context_menu.addAction(convert_action)
         self.chapter_context_menu.addSeparator()
 
@@ -251,9 +257,18 @@ class MangaSiteWidget(QWidget):
             lambda: self.remove_from_disk('C')
         )
         self.chapter_context_menu.addAction(remove_from_disk)
-
-        self.site_selected()
         # endregion
+        self.combo_box_sites.site_selected(0)
+
+    def open_manga_context_menu(self):
+        self.manga_selected(self.mangas_list.currentRow()),
+        self.manga_context_menu.exec_(QCursor.pos())
+
+    def open_chapter_context_menu(self):
+        self.chapter_context_menu.exec_(QCursor.pos())
+
+    def open_tasks_list_context_menu(self):
+        self.tasks_list_context_menu.exec_(QCursor.pos())
 
     def reload_chapters_list(self):
         indexes = [idx.row() for idx in self.chapters_list.selectedIndexes()]
@@ -279,7 +294,7 @@ class MangaSiteWidget(QWidget):
         This separation is necessary because each group of tasks does not share task counter
             and their taks_id could be ambiguous
         """
-        item = QListWidgetItem('Task [{}]: {}'.format(task_id, msg))
+        item = QListWidgetItem(F'Task [{task_id}]: {msg}')
         item.setData(QtCore.Qt.UserRole, uuid)
         self.tasks_list.addItem(item)
         self.tasks_list.scrollToBottom()
@@ -293,11 +308,12 @@ class MangaSiteWidget(QWidget):
             entry_uuid = tasks_entry.data(QtCore.Qt.UserRole)
             if entry_uuid == uuid:
                 self.tasks_list.takeItem(self.tasks_list.row(tasks_entry))
+
     # endregion
 
     # region chapters_list actions
     @ensure_chapter_selected
-    def chapter_clear_clicked(self):
+    def chapter_clear_clicked(self, *args):
         selected_chapters = self.chapters_list.selectedItems()
         for selected_chapter in selected_chapters:
             chapter = selected_chapter.data(QtCore.Qt.UserRole)
@@ -305,30 +321,42 @@ class MangaSiteWidget(QWidget):
         self.reload_chapters_list()
 
     @ensure_chapter_selected
+    def start_chapters_download(self, *args):
+        self.start_working_threads(SingleChapterDownloadThread, _('Downloading {} chapters...'))
+
+    @ensure_chapter_selected
+    def start_chapters_save(self, *args):
+        self.start_working_threads(SingleChapterSaveThread, _('Saving {} chapters...'))
+
+    @ensure_chapter_selected
+    def start_chapters_convert(self, *args):
+        self.start_working_threads(SingleChapterConvertThread, _('Converting {} chapters...'))
+
     def start_working_threads(self, thread_job_type, message):
         """
         This method is invoked by context menu actions
         It starts threads and they  context menu entry was selected
         """
-        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in self.chapters_list.selectedItems()]
+        chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in
+                    self.chapters_list.selectedItems()]
         self.add_to_progress_max(len(chapters))
         self.show_msg_on_status_bar(message.format(
             self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole).title))
-        t = GroupOfThreads(self.ddmd, thread_job_type, chapters, self.task_add_to_list, self.signle_task_finished)
+        t = GroupOfThreads(self.ddmd, thread_job_type, chapters, self.task_add_to_list, self.single_task_finished)
         self.threads[str(t)] = t
         t.message.connect(self.group_of_threads_finished)
         t.finished.connect(self.remove_from_progress_max)
         t.start()
 
     @ensure_chapter_selected
-    def chapter_double_clicked(self):
+    def chapter_double_clicked(self, *args):
         chapter_index = self.chapters_list.currentRow()
         chapter = self.chapters_list.item(chapter_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_chapter(chapter)
-        self.start_working_threads(SingleChapterDownloadThread, _('Downloading {} chapters...'))
+        self.start_chapters_download()
 
     @ensure_chapter_selected
-    def mark_as_downloaded(self):
+    def mark_as_downloaded(self, *args):
         if self.mangas_list.currentRow() != -1:
             selected_chapters = self.chapters_list.selectedItems()
             chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
@@ -337,30 +365,31 @@ class MangaSiteWidget(QWidget):
             self.reload_chapters_list()
 
     @ensure_chapter_selected
-    def mark_as_converted(self):
+    def mark_as_converted(self, *args):
         if self.mangas_list.currentRow() != -1:
             selected_chapters = self.chapters_list.selectedItems()
             chapters = [selected_chapter.data(QtCore.Qt.UserRole) for selected_chapter in selected_chapters]
             for chapter in chapters:
                 chapter.converted = True
             self.reload_chapters_list()
+
     # endregion
 
     # region manga_list actions
     @ensure_manga_selected
-    def manga_clear_clicked(self):
+    def manga_clear_clicked(self, *args):
         manga = self.mangas_list.item(self.mangas_list.currentRow()).data(QtCore.Qt.UserRole)
         manga.clear_state()
         self.reload_mangas_list()
         self.load_stored_chapters()
 
-    @ensure_manga_selected
     def manga_download_clicked(self):
         self.download_manga(self.mangas_list.currentRow())
 
     @ensure_manga_selected
-    def manga_selected(self):
-        manga_index = self.mangas_list.currentRow()
+    def manga_selected(self, manga_index):
+        if isinstance(manga_index, QModelIndex):
+            manga_index = manga_index.row()
         manga = self.mangas_list.item(manga_index).data(QtCore.Qt.UserRole)
         self.ddmd.set_cwd_manga(manga)
         self.load_stored_chapters()
@@ -398,12 +427,11 @@ class MangaSiteWidget(QWidget):
             self.load_stored_chapters(manga)
         finally:
             self.unlock_gui()
+
     # endregion
 
     # region site_combobox actions
-    def site_selected(self):
-        site_index = self.combo_box_sites.currentIndex()
-        site = self.combo_box_sites.itemData(site_index, QtCore.Qt.UserRole)
+    def site_selected(self, site):
         self.ddmd.set_cwd_site(site)
         self.load_stored_mangas()
         self.chapters_list.clear()
@@ -434,10 +462,11 @@ class MangaSiteWidget(QWidget):
             self.load_stored_mangas(site=site)
         finally:
             self.unlock_gui()
+
     # endregion
 
     # region progress bar actions
-    def signle_task_finished(self, uuid: int):
+    def single_task_finished(self, uuid: int):
         self.progress_bar.setValue(self.progress_bar.value() + 1)
         QtCore.QTimer.singleShot(QTIMER_REMOVE_TASK_TIMEOUT, lambda: self.remove_task_from_list(uuid))
 
@@ -446,6 +475,7 @@ class MangaSiteWidget(QWidget):
 
     def remove_from_progress_max(self, value: int):
         self.progress_bar.setMaximum(max(0, self.progress_bar.maximum() - value))
+
     # endregion
 
     @ensure_manga_selected

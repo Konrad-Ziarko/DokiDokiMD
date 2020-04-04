@@ -5,7 +5,6 @@ from dokidokimd.models import MangaSite
 from dokidokimd.tools.ddmd_logger import get_logger
 from dokidokimd.tools.translator import translate as _
 
-
 logger = get_logger(__name__)
 
 

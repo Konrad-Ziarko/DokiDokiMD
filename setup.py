@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 name = 'dokidokimd'
 
 DIR = join(dirname(abspath(__file__)), name)
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 
 with open(join(dirname(abspath(__file__)), 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -30,7 +30,7 @@ setup(
     author='Konrad Ziarko',
     author_email='konrad.ziarko@protonmail.ch',
     url='https://github.com/Konrad-Ziarko/DokiDokiMD',
-    download_url='https://github.com/Konrad-Ziarko/DokiDokiMD/archive/v{0}.zip'.format(VERSION),
+    download_url=F'https://github.com/Konrad-Ziarko/DokiDokiMD/archive/v{VERSION}.zip',
     package_dir={'': name},
     packages=find_packages(name, exclude=['sites']),
 
