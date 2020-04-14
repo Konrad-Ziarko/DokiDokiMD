@@ -113,12 +113,8 @@ class DDMDController:
             return manga
 
     def crawl_chapter(self, chapter: Chapter):
-        try:
             site = self.cwd_site
             crawler = self.__get_crawler(site.site_name)
             if crawler:
                 crawler.download(chapter)
                 chapter.set_downloaded(True)
-        except Exception as e:
-            logger.error(_(F'Error occurred while downloading chapter: {e}'))
-            logger.error(traceback.print_exc())
