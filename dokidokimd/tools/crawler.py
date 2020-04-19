@@ -174,13 +174,16 @@ class MangaSeeCrawler(MangaPandaCrawler):
             response = s.get(url)
             if response.status_code == 200:
                 tree = html.fromstring(response.content)
-                for page_num in range(1, 1 + len(tree.xpath('/html/body/div[2]/div[4]/div/div/span/select[2]/option'))):
-                    image_src = str(tree.xpath(self.re_download_path)[0])
-                    image = s.get(image_src, stream=True).content
-                    chapter.add_page(image)
-                    url = start_url[:-6] + str(page_num) + start_url[-5:]
-                    response = s.get(url)
-                    tree = html.fromstring(response.content)
+                try:
+                    for page_num in range(1, 1 + len(tree.xpath('/html/body/div[2]/div[4]/div/div/span/select[2]/option'))):
+                        image_src = str(tree.xpath(self.re_download_path)[0])
+                        image = s.get(image_src, stream=True).content
+                        chapter.add_page(image)
+                        url = start_url[:-6] + str(page_num) + start_url[-5:]
+                        response = s.get(url)
+                        tree = html.fromstring(response.content)
+                except IndexError:
+                    raise IndexError(_(F'Could not download image from {url}, please try again later'))
             else:
                 raise ConnectionError(_(F'Could not connect with {start_url} site, status code: {response.status_code}'))
         return chapter.number_of_pages()
