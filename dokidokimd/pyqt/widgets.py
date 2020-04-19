@@ -92,7 +92,7 @@ class SitesSelector(QComboBox):
 
     def site_selected(self, site_index):
         site = self.itemData(site_index, QtCore.Qt.UserRole)
-        self.site_selected_action(site)
+        self.site_selected_action(site_index, site)
 
 
 class MangaSiteWidget(QWidget):
@@ -142,6 +142,11 @@ class MangaSiteWidget(QWidget):
         btn_crawl_site.setMaximumSize(btn_crawl_site.sizeHint())
         btn_crawl_site.clicked.connect(self.update_mangas)
         btn_crawl_site.setIcon(QIcon(get_resource_path('icons/baseline_search_black_18dpx2.png')))
+        # endregion
+
+        # region manga sites selector
+        if not 0 < self.ddmd.last_site < len(self.ddmd.get_sites()):
+            self.ddmd.set_new_last_site(0)
         self.combo_box_sites = SitesSelector(self.site_selected, self.ddmd.get_sites())
         search_part.addWidget(self.combo_box_sites)
         search_part.addWidget(btn_crawl_site)
@@ -258,7 +263,8 @@ class MangaSiteWidget(QWidget):
         )
         self.chapter_context_menu.addAction(remove_from_disk)
         # endregion
-        self.combo_box_sites.site_selected(0)
+        self.combo_box_sites.setCurrentIndex(self.ddmd.last_site)
+        self.combo_box_sites.site_selected(self.ddmd.last_site)
 
     def open_manga_context_menu(self):
         self.manga_selected(self.mangas_list.currentRow()),
@@ -431,9 +437,10 @@ class MangaSiteWidget(QWidget):
     # endregion
 
     # region site_combobox actions
-    def site_selected(self, site):
+    def site_selected(self, site_index, site):
+        self.ddmd.set_new_last_site(site_index)
         self.ddmd.set_cwd_site(site)
-        self.load_stored_mangas()
+        self.load_stored_mangas(site=site)
         self.chapters_list.clear()
 
     def load_stored_mangas(self, filter_text='', site=None):

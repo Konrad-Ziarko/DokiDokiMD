@@ -24,6 +24,7 @@ class DDMDController:
         self.ddmd_storage = MangaStorage()                          # type: MangaStorage
         set_logger_level(self.config.log_level)
 
+        self.last_site = self.config.last_site          # type: int
         self.cwd_site = None                                        # type: MangaSite
         self.cwd_manga = None                                       # type: Manga
         self.cwd_chapter = None                                     # type: Chapter
@@ -32,6 +33,10 @@ class DDMDController:
         self.crawlers = {}                                          # type: Dict[str, BaseCrawler]
         self.load_db()
         logger.info(_('Program started'))
+
+    def set_new_last_site(self, index):
+        self.last_site = index
+        self.config.last_site = index
 
     def load_db(self):
         self.manga_sites = []
@@ -112,8 +117,8 @@ class DDMDController:
             return manga
 
     def crawl_chapter(self, chapter: Chapter):
-            site = self.cwd_site
-            crawler = self.__get_crawler(site.site_name)
-            if crawler:
-                crawler.download(chapter)
-                chapter.set_downloaded(True)
+        site = self.cwd_site
+        crawler = self.__get_crawler(site.site_name)
+        if crawler:
+            crawler.download(chapter)
+            chapter.set_downloaded(True)

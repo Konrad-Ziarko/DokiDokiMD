@@ -21,17 +21,19 @@ class ConfigManager(object):
         self.config_path = os.path.join(path, 'ddmd.ini')
         self.config = configparser.ConfigParser()
 
-        self._default_sot = False                       # type: bool
-        self._default_dark_mode = True                  # type: bool
-        self._default_db_path = get_sites_path(path)    # type: str
-        self._default_max_threads = 5                   # type: int
-        self._default_log_level = 2                     # type: int
+        self._default_sot = False                           # type: bool
+        self._default_dark_mode = True                      # type: bool
+        self._default_db_path = get_sites_path(path)        # type: str
+        self._default_max_threads = 5                       # type: int
+        self._default_log_level = 2                         # type: int
+        self._default_last_site = 0                         # type: int
 
-        self._sot = self._default_sot                   # type: bool
-        self._dark_mode = self._default_dark_mode       # type: bool
-        self._db_path = self._default_db_path           # type: str
-        self._max_threads = self._default_max_threads   # type: int
-        self._log_level = self._default_log_level       # type: int
+        self._sot = self._default_sot                       # type: bool
+        self._dark_mode = self._default_dark_mode           # type: bool
+        self._db_path = self._default_db_path               # type: str
+        self._max_threads = self._default_max_threads       # type: int
+        self._log_level = self._default_log_level           # type: int
+        self._last_site = self._default_last_site           # type: int
         try:
             self.config.read(self.config_path)
             if not self.config.has_section('Window'):
@@ -92,6 +94,15 @@ class ConfigManager(object):
         self._max_threads = max_threads
         self.write_config()
 
+    @property
+    def last_site(self):
+        return self._last_site
+
+    @last_site.setter
+    def last_site(self, last_site: int):
+        self.config.set('Manga', 'last_site', str(last_site))
+        self._last_site = last_site
+
     def read_config(self):
         try:
             self.sot = self.config.getboolean('Window', 'stay_on_top')
@@ -115,6 +126,10 @@ class ConfigManager(object):
             self.max_threads = self.config.getint('Manga', 'max_threads')
         except (configparser.NoOptionError, ValueError):
             self.max_threads = self._default_max_threads
+        try:
+            self.last_site = self.config.getint('Manga', 'last_site')
+        except (configparser.NoOptionError, ValueError):
+            self.last_site = self._default_last_site
 
     def write_config(self):
         with open(self.config_path, 'w') as configfile:
