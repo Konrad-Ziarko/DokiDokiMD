@@ -443,12 +443,13 @@ class MangaSiteWidget(QWidget):
         self.load_stored_mangas(site=site)
         self.chapters_list.clear()
 
-    def load_stored_mangas(self, filter_text='', site=None):
+    def load_stored_mangas(self, site=None):
+        filter_text = self.filter_mangas_textbox.text()
         if not site:
             site = self.ddmd.get_current_site()
         self.mangas_list.clear()
         for manga in site.mangas:
-            if filter_text.lower() in manga.title.lower():
+            if filter_text == '' or filter_text.lower() in manga.title.lower():
                 item = QListWidgetItem(manga.title)
                 if manga.downloaded:
                     item.setForeground(QCOLOR_DOWNLOADED)
@@ -540,4 +541,4 @@ class MangaSiteWidget(QWidget):
             obj.remove_from_disk(base_path)
 
     def apply_filter(self):
-        self.load_stored_mangas(filter_text=self.filter_mangas_textbox.text())
+        self.load_stored_mangas()
